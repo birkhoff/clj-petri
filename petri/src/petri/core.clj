@@ -4,7 +4,13 @@
 (use '[clojure.string :only (replace-first)])
 
 (defn extend_keyword [old new]
-  (keyword (replace-first (str old) ":" (str new "-"))))
+  (if (= old nil) nil
+      (keyword (replace-first (str old) ":" (str new "-")))))
+
+(defn keyword_to_string [k]
+   (replace-first (str k) ":" ""))
+
+
 
 (def state (atom nil))
 
@@ -101,6 +107,41 @@
 
 
 
+(defn  get_new_hash [t v a_t a_v]
+  (keyword (str
+            (if (= a_t nil) t a_t) "-"
+            (if (= a_v nil)  (keyword_to_string v) (keyword_to_string a_v))))
+  ) 
+
+(type '{(get_new_hash "yolo" :swag "no" :you) true})
+(keyword :wo)
+
+(defn help_in [name edges vertices]
+    (reduce merge (for [x edges]
+        (let [alias_v    (extend_keyword ((second (second x)) vertices) name)
+              alias_t    (str name "-" (first (second x)))
+              pref_v     (extend_keyword (second (second x)) name)
+              pref_t     (str name "-" (first (second x)))
+              new_hash   (get_new_hash pref_t pref_v alias_t alias_v) ]
+          {new_hash [ (if (= alias_t nil)
+                                  pref_t
+                                  alias_t)
+                        (if (= alias_v nil)
+                                  pref_v
+                                  alias_v)
+                               ]}))))
+
+
+                                        ;unites edges in from two
+                                        ;petri nets checks via alias
+                                        ;if vertic needs to be replaced
+
+(defn unite_edges_in [name ea eb vertices]
+  (merge (help_in name ea vertices)
+         (help_in name eb vertices)))
+
+
+
 
 
                                         ;merging two Petri Nets
@@ -113,7 +154,7 @@
      name
      (unite_vertices name (:vertices na) (:vertices nb) vertices)
      (union (:transitions na) (:transitions nb))
-     (union (:edges_in na) (:edges_in nb))
+     (unite_edges_in name (:edges_in na) (:edges_in nb) vertices)
      (union (:edges_out na) (:edges_out nb))
      )))
 
@@ -176,9 +217,10 @@ init
                                         ; own_petri [name vertices transitions in out]
 
 
-(mergesimple "tunac" "Petri_A" "Petri_B" '{:Petri_B-d :Petri_A-v-a} )
+(mergesimple "tunac" "Petri_A" "Petri_B" '{:Petri_A-v-a :Petri_B-d})
 
 (rename-keys '{:a 9 :c 2 :d 4} '{:a :b})
+
 
 
 (:tunac-Petri_A-v-a(:vertices (mergesimple "tunac" "Petri_A" "Petri_B" {})))
