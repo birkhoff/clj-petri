@@ -43,6 +43,7 @@
 
 
 
+
 (defn state_add_transition [net transition]
   (let [t (:transitions ((keyword net) (deref state)))
         n ((keyword net) (deref state))
