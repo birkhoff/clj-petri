@@ -71,17 +71,20 @@
 
 
 
-(defn contains_edge [t t1]
-  (first (filter identity
-     (for [x t]
-      (if (and (= (first  x)  (first t1))  (= (second x) (second t1)))
-         x)))) )
+(defn contains_edge_all [t t1]
+   (filter identity
+             (for [x t]
+               (if (and (= (first  x)  (first t1))  (= (second x) (second t1)))
+                 x))) )
+
+(defn contains_egde [t t1]
+  (first (contains_edge_all t t1)))
 
 (contains_edge #{[:a ] [:a :b 9] [:a :c] [:b :c]} [:a :b 3])
 
 
-                                        ;adds an edge t1 in t and replaces an equal edge with the new value
-                                        ;(vector)
+                              ;adds an edge t1 in t and replaces an equal edge with the new value
+                              ;(vector)
 
 
 (defn add_edge [t t1]
@@ -177,21 +180,46 @@
 
 
 
+;;;;;;;;;;;;;;;
+;;; Merging ;;;
+;;;;;;;;;;;;;;;
 
-;;; Merging
+                                        ; unites vertices or
+	                                      ; transitions (according to parameter) from two
+                                        ; petrinets
+                                        ; if two vertices are merged their units are summed up
 
-	                                        ; unites vertices or
-	                                        ; transitions (according to parameter) from two
-                                          ; petrinets
 
 (defn unite [name va vb vertices]
-  (reduce merge (for [v (rename-keys (union va vb) vertices)]
-                  { (first v)  (second v)}   )))
+  (reduce merge
+    (for [v  (union va vb)]
+      (if (contains? vertices (first v))
+        { ((first v) vertices)  [ (first (second v))
+                                  (+(second (second v))
+                                     (second(((first v) vertices) vb)))] }
+        { (first v)  (second v)})   )))
 
 
-(defn unite_edges [ea eb vertices transitions]
+(defn unite_transitions [name va vb transitions]
+  (reduce merge (for [t (rename-keys (union va vb) transitions)]
+                  { (first t)  (second t)}   )))
+
+
+(defn simple_unite_edges [ea eb vertices transitions]
   (into #{} (for [x (union ea eb)]
               (replace transitions (replace vertices x))  )  ) )
+
+(defn sum_up_equals [t]
+  (into #{} (for [x t]
+             [(first x) (second x) (reduce + (map last (contains_edge_all t x) ))])))
+
+
+(sum_up_equals  #{[:563948993 :563949003 7] [:563949025 :563949003 9]
+   [:563949025 :563949003 10]})
+
+(defn unite_edges [ea eb vertices transitions]
+  (sum_up_equals (into #{} (for [t (union ea eb)]
+                (replace transitions (replace vertices t)) ))))
 
 
 
@@ -201,7 +229,7 @@
     (own_petri
      name
      (unite name (:vertices na) (:vertices nb) same_vertices)
-     (unite name (:transitions na) (:transitions nb) same_transitions)
+     (unite_transitions name (:transitions na) (:transitions nb) same_transitions)
      (unite_edges (:edges_in na) (:edges_in nb) same_vertices same_transitions)
      (unite_edges (:edges_out na) (:edges_out nb) same_vertices same_transitions)
      )))
@@ -233,6 +261,7 @@ init
 (state_add_edges_in "Petri_A" "v-a" "y" 7)
 
 (state_add_edges_out "Petri_A"  "v-a" "y" 7)
+(state_add_edges_out "Petri_A" "v-a" "z" 5)
 (state_add_edges_out "Petri_A" "v-b" "y" 9)
 
 
@@ -243,6 +272,7 @@ init
 
 
 (state_add_vertix "Petri_B" "d" 7)
+;(state_add_vertix "Petri_B" "e" 11)
 (state_add_transition "Petri_B" "z")
 (state_add_edges_out "Petri_B" "d" "z" 10)
 (state_add_edges_in "Petri_B" "d" "z" 9)
@@ -260,17 +290,16 @@ init
 
                                         
                                         
-(hash_merge_petri "tunac" "Petri_A" "Petri_B" {(get_vertix_hash "Petri_A"  "v-a") (get_vertix_hash "Petri_B" "d")}  {(get_transition_hash "Petri_A" "z") (get_transition_hash "Petri_B" "z") })
+(hash_merge_petri "A_B" "Petri_A" "Petri_B" {(get_vertix_hash "Petri_A"  "v-a") (get_vertix_hash "Petri_B" "d")}  {(get_transition_hash "Petri_A" "z") (get_transition_hash "Petri_B" "z") })
 
-
+;(add_petri (hash_merge_petri "A_B" "Petri_A" "Petri_B"
+;{(get_vertix_hash "Petri_A"  "v-a") (get_vertix_hash "Petri_B" "d")}
+;{(get_transition_hash "Petri_A" "z") (get_transition_hash "Petri_B"
+;"z") }))
 
 ;(rename-keys '{:a 9 :c 2 :d 4} '{:a :b})
 
-
-
-
 ;(:tunac-Petri_A-v-a(:vertices (mergesimple "tunac" "Petri_A"
 ;"Petri_B" {} {})))
-
 
 ;(merge "tunac" "Petri_A" "Petri_B")
