@@ -3,9 +3,6 @@
 (use '[clojure.set])
 (use '[clojure.string :only (replace-first)])
 
-(defn extend_keyword [old new]
-  (if (= old nil) nil
-      (keyword (replace-first (str old) ":" (str new "-")))))
 
 (defn keyword_to_string [k]
   (replace-first (str k) ":" ""))
@@ -21,16 +18,31 @@
 (def init
   (reset! state nil) ) 
 
+                                        ;structure of an empty petri net
+
+
 (defn petri [name] {:name name , :vertices {}, :transitions {}, :edges_in #{}, :edges_out #{}} )
 
 
-                                        ;adds ad petri net
+                                        ;constructor for a custum petri net
 
 (defn own_petri [name vertices transitions in out]
    {:name name , :vertices vertices, :transitions transitions, :edges_in in, :edges_out out})
 
+
+
+                                        ;adds a given petri net to the state
+
 (defn add_petri [petri]
   (swap! state assoc (keyword (:name petri)) petri))
+
+
+
+                                        ;deletes a specified petri net (name of petri net)
+
+(defn delete_petri [petri]
+  (swap! state (dissoc (deref state) (keyword petri))))  
+
 
                                         ; adds a vertex to the specified net
                                         ; cats number of units
@@ -42,17 +54,20 @@
         v1 (keyword_hash_it  net  vertix)]
     (swap! state assoc (keyword net) (assoc n :vertices ( assoc v v1 [vertix cats] )))))
 
+
+
                                         ; adds a transition
-                                        ; transitions is a set because they do not contain more information
-                                        ; than their own name
-
-
-
+                                       
 (defn state_add_transition [net transition]
   (let [t (:transitions ((keyword net) (deref state)))
         n ((keyword net) (deref state))
         t1 (keyword_hash_it net transition)]
     (swap! state assoc (keyword net) (assoc n :transitions (assoc t t1 [transition])))))
+
+
+                                        ;nil if edge t1 is not included in t
+                                        ; if an edge with the same vertex and transition is already in t1 this
+                                        ; edge is returned (in a vector)
 
 
 
@@ -63,6 +78,11 @@
          x)))) )
 
 (contains_edge #{[:a ] [:a :b 9] [:a :c] [:b :c]} [:a :b 3])
+
+
+                                        ;adds an edge t1 in t and replaces an equal edge with the new value
+                                        ;(vector)
+
 
 (defn add_edge [t t1]
      (let [temp (contains_edge t t1)]
@@ -226,6 +246,10 @@ init
 (state_add_transition "Petri_B" "z")
 (state_add_edges_out "Petri_B" "d" "z" 10)
 (state_add_edges_in "Petri_B" "d" "z" 9)
+
+(deref state)
+
+;(delete_petri "Petri_C")
 
 (deref state)
                                         ; own_petri [name vertices transitions in out]
