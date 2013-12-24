@@ -181,9 +181,9 @@
 
 
 
-;;;;;;;;;;;;;;;
-;;; Merging ;;;
-;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;            Merging                ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
                                         ; unites vertices or
 	                                      ; transitions (according to parameter) from two
@@ -195,20 +195,29 @@
   (reduce merge
     (for [v  (union va vb)]
       (if (contains? vertices (first v))
-        { ((first v) vertices)  [ (first (second v))
-                                  (+(second (second v))
-                                     (second(((first v) vertices) vb)))] }
-        { (first v)  (second v)})   )))
+        { (keyword_hash_it name ((first v) vertices))
+          [ (first (second v))
+               (+(second (second v))
+               (second(((first v) vertices) vb)))] }
+        { (keyword_hash_it name (first v))  (second v)})   )))
 
 
 (defn unite_transitions [name va vb transitions]
   (reduce merge (for [t (rename-keys (union va vb) transitions)]
-                  { (first t)  (second t)}   )))
+                  { (keyword_hash_it name (first t))  (second t)}   )))
 
 
-(defn simple_unite_edges [ea eb vertices transitions]
-  (into #{} (for [x (union ea eb)]
-              (replace transitions (replace vertices x))  )  ) )
+
+
+                                        ;double hashes edges so they are still connected
+
+
+(defn rename_edges [net e]
+  (into #{}
+    (for [x e]
+       [(keyword_hash_it net (first x))
+        (keyword_hash_it net (second x))
+        (get x 2)]  )) )
 
 (defn sum_up_equals [t]
   (into #{} (for [x t]
@@ -218,9 +227,9 @@
 (sum_up_equals  #{[:563948993 :563949003 7] [:563949025 :563949003 9]
    [:563949025 :563949003 10]})
 
-(defn unite_edges [ea eb vertices transitions]
-  (sum_up_equals (into #{} (for [t (union ea eb)]
-                (replace transitions (replace vertices t)) ))))
+(defn unite_edges [name ea eb vertices transitions]
+  (rename_edges name (sum_up_equals (into #{} (for [t (union ea eb)]
+                               (replace transitions (replace vertices t)) )))))
 
 
 
@@ -231,8 +240,8 @@
      name
      (unite name (:vertices na) (:vertices nb) same_vertices)
      (unite_transitions name (:transitions na) (:transitions nb) same_transitions)
-     (unite_edges (:edges_in na) (:edges_in nb) same_vertices same_transitions)
-     (unite_edges (:edges_out na) (:edges_out nb) same_vertices same_transitions)
+     (unite_edges name (:edges_in na) (:edges_in nb) same_vertices same_transitions)
+     (unite_edges name (:edges_out na) (:edges_out nb) same_vertices same_transitions)
      )))
 
 
@@ -243,6 +252,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
+                                        ;renames vertices and double hashes
 
 (defn rename_vertices [net v]
   (reduce merge (for [x v]
@@ -251,17 +261,15 @@
 
 
 
+                                        ;renames transitions and double hashes
+
 (defn rename_transitions [net t]
   (reduce merge (for [x t]
                   {(hash_it net (first x)) [(str "t_" (hash (second x))) ] }
       )))
 
-(defn rename_edges [net e]
-  (into #{}
-    (for [x e]
-       [(keyword_hash_it net (first x))
-        (keyword_hash_it net (second x))
-        (get x 2)]  )) )
+
+
 
 
 (defn copy_petri [copy_name original]
