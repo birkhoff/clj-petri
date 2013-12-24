@@ -13,6 +13,7 @@
 (defn keyword_hash_it [net v]
   (keyword (str (hash_it net v))))
 
+
 (def state (atom nil))
 
 (def init
@@ -237,6 +238,42 @@
 
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; copy
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+
+(defn rename_vertices [net v]
+  (reduce merge (for [x v]
+    {(keyword_hash_it net  (first x))
+           [(str "v_" (hash (first (second x)))) (second (second x))]} )))
+
+
+
+(defn rename_transitions [net t]
+  (reduce merge (for [x t]
+                  {(hash_it net (first x)) [(str "t_" (hash (second x))) ] }
+      )))
+
+(defn rename_edges [net e]
+  (into #{}
+    (for [x e]
+       [(keyword_hash_it net (first x))
+        (keyword_hash_it net (second x))
+        (get x 2)]  )) )
+
+
+(defn copy_petri [copy_name original]
+  (let [copy ((keyword original) (deref state))]
+    ; own_petri [name vertices transitions in out]
+    (own_petri
+     copy_name
+     (rename_vertices copy_name (:vertices copy)) 
+     (rename_transitions copy_name (:transitions copy))
+     (rename_edges copy_name (:edges_in copy))
+     (rename_edges copy_name (:edges_out copy)))))
+
 
 
 ; (replace-first (str (keyword "String")) ":" "")
@@ -292,11 +329,18 @@ init
                                         
 (hash_merge_petri "A_B" "Petri_A" "Petri_B" {(get_vertix_hash "Petri_A"  "v-a") (get_vertix_hash "Petri_B" "d")}  {(get_transition_hash "Petri_A" "z") (get_transition_hash "Petri_B" "z") })
 
-;(add_petri (hash_merge_petri "A_B" "Petri_A" "Petri_B"
-;{(get_vertix_hash "Petri_A"  "v-a") (get_vertix_hash "Petri_B" "d")}
-;{(get_transition_hash "Petri_A" "z") (get_transition_hash "Petri_B"
-;"z") }))
+                                        ;
+(add_petri (hash_merge_petri "A_B" "Petri_A" "Petri_B"
+                                        ;
+{(get_vertix_hash "Petri_A"  "v-a") (get_vertix_hash "Petri_B" "d")}
+                                        ;
+{(get_transition_hash "Petri_A" "z") (get_transition_hash "Petri_B"
+                                ;
+"z") }))
 
+
+
+(copy_petri "cp" "Petri_A")
 ;(rename-keys '{:a 9 :c 2 :d 4} '{:a :b})
 
 ;(:tunac-Petri_A-v-a(:vertices (mergesimple "tunac" "Petri_A"
