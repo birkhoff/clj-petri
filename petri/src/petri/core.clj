@@ -49,7 +49,6 @@
                                         ; cats number of units
 
 (defn state_add_vertix [net vertix cats]                  ;cats unit
-  (println (hash_it net vertix))
   (let [v  (:vertices ((keyword net) (deref state)))
         n  ((keyword net) (deref state))
         v1 (keyword_hash_it  net  vertix)]
@@ -71,14 +70,13 @@
                                         ; edge is returned (in a vector)
 
 
-
 (defn contains_edge_all [t t1]
    (filter identity
-             (for [x t]
-               (if (and (= (first  x)  (first t1))  (= (second x) (second t1)))
+     (for [x t]
+       (if (and (= (first  x)  (first t1))  (= (second x) (second t1)))
                  x))) )
 
-(defn contains_egde [t t1]
+(defn contains_edge [t t1]
   (first (contains_edge_all t t1)))
 
 (contains_edge #{[:a ] [:a :b 9] [:a :c] [:b :c]} [:a :b 3])
@@ -152,8 +150,8 @@
 (defn state_add_edges_out [net vertix transition cost]
    (let [e (:edges_out ((keyword net) (deref state)))
          n ((keyword net) (deref state))
-         v1 (keyword_hash_it net vertix)
-         t1 (keyword_hash_it net transition)]
+         v1 (get_vertix_hash net vertix)
+         t1 (get_transition_hash net transition)]
      (if (and  (not= v1 nil) (not=  t1 nil) )
        (swap! state assoc (keyword net) (assoc n :edges_out (add_edge e  [t1 v1 cost]))))) )
 
@@ -167,7 +165,7 @@
         t1 (get_transition_hash net transition) ]
     (filter identity
        (for [x (:edges_in (n (deref state)))]
-         (if (= (first x) t1)  [(second x) (get x 2)]))) ) )
+         (if (= (first x) t1)  x))) ) )
 
 
 
@@ -176,7 +174,7 @@
         t1 (get_transition_hash net transition) ]
     (filter identity
        (for [x (:edges_out (n (deref state)))]
-         (if (= (second x) t1)  [(second x) (get x 2)]))) ) )
+         (if (= (second x) t1)  x))) ) )
 
 
 
@@ -185,8 +183,7 @@
 ;;;            Merging                ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-                                        ; unites vertices or
-	                                      ; transitions (according to parameter) from two
+                                        ; unites vertices from two
                                         ; petrinets
                                         ; if two vertices are merged their units are summed up
 
@@ -201,6 +198,7 @@
                (second(((first v) vertices) vb)))] }
         { (keyword_hash_it name (first v))  (second v)})   )))
 
+                                        ;unites transitions from two petrinets
 
 (defn unite_transitions [name va vb transitions]
   (reduce merge (for [t (rename-keys (union va vb) transitions)]
@@ -265,8 +263,7 @@
 
 (defn rename_transitions [net t]
   (reduce merge (for [x t]
-                  {(hash_it net (first x)) [(str "t_" (hash (second x))) ] }
-      )))
+       {(keyword_hash_it net (first x)) [(str "t_" (hash (second x))) ] } )))
 
 
 
@@ -281,6 +278,51 @@
      (rename_transitions copy_name (:transitions copy))
      (rename_edges copy_name (:edges_in copy))
      (rename_edges copy_name (:edges_out copy)))))
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;      Simulator     ;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;(for [x (state_get_edges_to_transition "Petri_A" "y")] x)
+
+(defn element_in_list? [List X]
+  (contains? (set List) X))
+
+(defn elements_in_list? [List Elements]
+  (for [X Elements]
+    (element_in_list? List X)))
+
+
+(defn net_fireable_edges [net]
+  (let [n ((keyword net) (deref state))
+        v (:vertices n)
+        e (:edges_in n)]
+    (filter identity (for [x e]
+        (if (>= (second ((second x) v)) (get x 2)) x ))) ) )
+
+(net_fireable_edges "Petri_A")
+
+(state_get_edges_to_transition "Petri_A" "y")
+
+(defn state_transition_fireable? [net t]
+  (if (element_in_list?
+       (elements_in_list? (state_get_edges_to_transition net t) (net_fireable_edges net))
+       false)
+    false
+    true))
+
+(state_transition_fireable? "Petri_A" "y")
+
+(elements_in_list? '([:a :b 10] [:c :d 11] [:e :f 12]) '([:a :b 10] [:e :f 12]))
+
+
+;;;; code from save.txt
+
+
+
 
 
 
@@ -304,6 +346,7 @@ init
 (state_add_edges_in "Petri_A" "v-a" "z" 9)
 (state_add_edges_in "Petri_A" "v-a" "z" 10)
 (state_add_edges_in "Petri_A" "v-a" "y" 7)
+(state_add_edges_in "Petri_A" "v-b" "y" 6)
 
 (state_add_edges_out "Petri_A"  "v-a" "y" 7)
 (state_add_edges_out "Petri_A" "v-a" "z" 5)
@@ -349,6 +392,10 @@ init
 
 
 (copy_petri "cp" "Petri_A")
+
+(state_get_edges_to_transition "Petri_A" "y")
+
+
 ;(rename-keys '{:a 9 :c 2 :d 4} '{:a :b})
 
 ;(:tunac-Petri_A-v-a(:vertices (mergesimple "tunac" "Petri_A"
