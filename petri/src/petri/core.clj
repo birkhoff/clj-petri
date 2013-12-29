@@ -322,6 +322,16 @@
     false
     true))
 
+                                        ;checks if one of the Elements
+                                        ;is in the List
+
+(defn least_one_elements_in_list? [List Elements]
+  (if (element_in_list?
+         (for [X Elements]
+           (element_in_list? List X)) true)
+    true
+    false))
+
 
 (elements_in_list? '([:a :b 10] [:c :d 11] [:e :f 12]) '([:a :b 10] [:e :f 12] ))
 
@@ -363,7 +373,7 @@
 (defn net_alive [net]
   (not (empty? (state_get_fireable_transitions net))))
 
-(net_alive "Petri_C")
+(net_alive "Petri_A")
 
                                         ; sees if a transition with
                                         ; the name t is fireable
@@ -425,10 +435,29 @@
 (edges_from_transition_hash "Petri_A" :563948993)
 
 
+(defn transition_alive [net & args]
+  (least_one_elements_in_list?
+   (for [X (state_get_fireable_transitions net)]
+     (first (X (:transitions ((keyword net) (deref state))))))
+     args))
 
+(transition_alive "Petri_A" "y" "a")
 
+(defn non_empty_vertices [net]
+  (into #{} (filter identity
+     (for [X (:vertices ((keyword net) (deref state)))]
+        (if (< 0 (second (second X)))
+         X)))))
 
+(non_empty_vertices "Petri_A")
 
+(defn non_empty [net & args]
+  (least_one_elements_in_list? 
+   (for [X (non_empty_vertices net)]
+     (first (second X)))
+   args))
+
+(non_empty "Petri_A" "a")
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 init
@@ -452,7 +481,7 @@ init
 (state_add_edges_in "Petri_A" "v-a" "y" 7)
 (state_add_edges_in "Petri_A" "v-b" "y" 6)
 
-(state_add_edges_out "Petri_A"  "v-a" "y" 7)
+(state_add_edges_out "Petri_A"  "v-a" "y" 8)
 (state_add_edges_out "Petri_A" "v-a" "z" 5)
 (state_add_edges_out "Petri_A" "v-b" "y" 9)
 
