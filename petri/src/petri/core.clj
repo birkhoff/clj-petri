@@ -288,35 +288,85 @@
 
 ;(for [x (state_get_edges_to_transition "Petri_A" "y")] x)
 
+
+                                        ; checks if an Element is in a List
+
 (defn element_in_list? [List X]
   (contains? (set List) X))
 
-(defn elements_in_list? [List Elements]
-  (for [X Elements]
-    (element_in_list? List X)))
+                                        ; checks if multuple Elements are in a List
 
+(defn elements_in_list? [List Elements]
+  (if (element_in_list?
+         (for [X Elements]
+           (element_in_list? List X)) false)
+    false
+    true))
+
+
+(elements_in_list? '([:a :b 10] [:c :d 11] [:e :f 12]) '([:a :b 10] [:e :f 12] ))
+
+
+                                        ; returns all edges which are able to fire
 
 (defn net_fireable_edges [net]
   (let [n ((keyword net) (deref state))
         v (:vertices n)
         e (:edges_in n)]
-    (filter identity (for [x e]
-        (if (>= (second ((second x) v)) (get x 2)) x ))) ) )
+    (into #{} (filter identity (for [x e]
+                                 (if (>= (second ((second x) v)) (get x 2)) x )))) ) )
+
+                                        ; returns edges which aren't
+                                        ; able to fire 
+
+(defn net_not_fireable_edges [net]
+  (reduce disj  (:edges_in ((keyword net) (deref state)))
+           (net_fireable_edges net) ))
 
 (net_fireable_edges "Petri_A")
+(net_not_fireable_edges "Petri_A")
 
 (state_get_edges_to_transition "Petri_A" "y")
 
+                                        ; returns all fireable
+                                        ; transition hashes
+
+
+(defn state_get_fireable_transitions [net]
+  (reduce disj
+          (into #{} (map first (net_fireable_edges net)))
+          (into #{} (map first (net_not_fireable_edges net)))))
+
+(state_get_fireable_transitions "Petri_A")
+
+                                        ;checks if net is alive
+
+(defn net_alive [net]
+  (not (empty? (state_get_fireable_transitions net))))
+
+(net_alive "Petri_C")
+
+                                        ; sees if a transition with
+                                        ; the name t is fireable
+
+
 (defn state_transition_fireable? [net t]
-  (if (element_in_list?
-       (elements_in_list? (state_get_edges_to_transition net t) (net_fireable_edges net))
-       false)
-    false
-    true))
+  (elements_in_list? (state_get_edges_to_transition net t) (net_fireable_edges net)))
 
-(state_transition_fireable? "Petri_A" "y")
+                                        ; sees if a transition hash is firable
 
-(elements_in_list? '([:a :b 10] [:c :d 11] [:e :f 12]) '([:a :b 10] [:e :f 12]))
+(defn state_transition_hash_fireable [net hash]
+  (contains? (state_get_fireable_transitions net) hash))
+
+
+(state_transition_hash_fireable "Petri_A" :563948994)
+(state_transition_fireable? "A_B" "y")
+
+
+
+
+(reduce disj #{:a :b :c :d} #{:a :b} )
+
 
 
 ;;;; code from save.txt
@@ -334,7 +384,6 @@ init
 (add_petri (petri "Petri_B"))
 (add_petri (petri "Petri_C"))
 ;(deref state)
-(:abba (deref state))
 (state_add_vertix "Petri_A" "v-a" 9)
 (state_add_vertix "Petri_A" "v-b" 6) 
 
@@ -344,7 +393,7 @@ init
 
 
 (state_add_edges_in "Petri_A" "v-a" "z" 9)
-(state_add_edges_in "Petri_A" "v-a" "z" 10)
+(state_add_edges_in "Petri_A" "v-a" "z" 8)
 (state_add_edges_in "Petri_A" "v-a" "y" 7)
 (state_add_edges_in "Petri_A" "v-b" "y" 6)
 
