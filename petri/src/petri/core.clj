@@ -159,6 +159,7 @@
                                         ;returns a set of vectors
                                         ;of edges containing specified
                                         ;transition
+;NEEDS TO BE UPDATED TO USE THE FUNCTION BELOW
 
 (defn state_get_edges_to_transition [net transition]
   (let [n (keyword net)
@@ -174,8 +175,26 @@
         t1 (get_transition_hash net transition) ]
     (filter identity
        (for [x (:edges_out (n (deref state)))]
-         (if (= (second x) t1)  x))) ) )
+         (if (= (first x) t1)  x))) ) )
 
+
+                                        ; returns a set of vectors of
+                                        ; edges containing the
+                                        ; specified HASH value of the transition
+
+(defn edges_to_transition_hash [net hash]
+  (let [n (keyword net)]
+    (into #{} (filter identity
+                     (for [x (:edges_in (n (deref state)))]
+                       (if (= (first x) hash)  x)))) ) )
+
+
+
+(defn edges_from_transition_hash [net hash]
+  (let [n (keyword net)]
+    (into #{} (filter identity
+                      (for [x (:edges_out (n (deref state)))]
+                        (if (= (first x) hash)  x)))) ) )
 
 
 
@@ -364,19 +383,53 @@
 
 
 
-
-(reduce disj #{:a :b :c :d} #{:a :b} )
-
-
-
-;;;; code from save.txt
-
-
-
+(defn fire_to_edge [net e]
+  (let [cost  (get e 2)
+        n     ((keyword net) (deref state))
+        vertices (:vertices n)
+        vhash (second e)
+        v1    (vhash (:vertices n))]
+    {vhash [(first v1) (- (second v1) cost)]}))
 
 
+(defn fire_to_all_edges [edges net]
+  (let [n ((keyword net) (deref state))
+        vertices (:vertices n)]
+    (conj vertices (reduce merge (for [X edges]
+                              (fire_to_edge net X))))))
 
-; (replace-first (str (keyword "String")) ":" "")
+(defn fire_from_edge [vertices net e]
+  (let [cost  (get e 2)
+        vhash (second e)
+        v1    (vhash vertices)]
+    {vhash [(first v1) (+ (second v1) cost)]}))
+
+(defn fire_from_all_edges [vertices edges net]
+  (conj vertices (reduce merge (for [X edges]
+                                 (fire_from_edge vertices net X)))))
+
+
+
+;  (swap! state assoc (keyword net) (assoc n :vertices ( assoc v v1 [vertix cats] ))
+
+(defn state_fire_transition [net t]
+  (let [edges (edges_to_transition_hash net t)
+        outs  (edges_from_transition_hash net t)
+        n     ((keyword net) (deref state))]
+    (if (state_transition_hash_fireable net t)
+              
+      (swap! state assoc (keyword net)
+             (assoc n :vertices (fire_from_all_edges (fire_to_all_edges edges net) outs net))))))
+
+
+(edges_from_transition_hash "Petri_A" :563948993)
+
+
+
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 init
 
@@ -386,9 +439,11 @@ init
 ;(deref state)
 (state_add_vertix "Petri_A" "v-a" 9)
 (state_add_vertix "Petri_A" "v-b" 6) 
+(state_add_vertix "Petri_A" "c" 0)
 
 (state_add_transition "Petri_A" "z")
 (state_add_transition "Petri_A" "y")
+
 
 
 
@@ -429,6 +484,8 @@ init
                                         
 (hash_merge_petri "A_B" "Petri_A" "Petri_B" {(get_vertix_hash "Petri_A"  "v-a") (get_vertix_hash "Petri_B" "d")}  {(get_transition_hash "Petri_A" "z") (get_transition_hash "Petri_B" "z") })
 
+(add_petri (hash_merge_petri "REAL_A" "Petri_A" "Petri_A" {}  {}))
+
                                         ;
 (add_petri (hash_merge_petri "A_B" "Petri_A" "Petri_B"
                                         ;
@@ -443,6 +500,8 @@ init
 (copy_petri "cp" "Petri_A")
 
 (state_get_edges_to_transition "Petri_A" "y")
+
+(state_fire_transition "Petri_A" :563948993)
 
 
 ;(rename-keys '{:a 9 :c 2 :d 4} '{:a :b})
