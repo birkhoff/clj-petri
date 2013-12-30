@@ -542,19 +542,38 @@ init
 (def button_fire
   (button :text "FIRE" :bounds [200 320 50 30]))
 
+
+
+
+
+                                        ;pretty printer for line feed after categories
+
+
 (defn pretty_a [input]                                     
   (clojure.string/replace (str input)
                           #"(.vertices)|(.edges_in)|(.edges_out)|(.transitions)" "\n       $1$2$3$4") )
+
+
+
+                                        ; pretty printer for line feed after new net
 
 (defn pretty_b [input]
   (clojure.string/replace (str input)
                           "}}," "}},\n"))
 
+;pretty printer combined 
+
 (defn pretty [input]
   (pretty_b (pretty_a input)))
 
 
-(pretty "{} {}")
+; doesnt work
+
+(defn update_state_field [e]
+  (text! field_state (pretty (deref state))))
+
+
+
 ;;;; Listeners
 
 (listen button_add_net :action
@@ -633,6 +652,104 @@ init
                      ]))
 
 (display panel)
+
+
+
+(def button_copy
+  (button :text "copy" :bounds [155 65 60 30]))
+
+(def field_copy_original
+  (text :bounds [30 30 150 30]))
+
+(def field_copy_copy
+  (text :bounds [190 30 150 30]))
+
+
+(def copypanel
+  (xyz-panel :items [button_copy
+                     (label :text "Original" :bounds [30 10 150 20])
+                     (label :text "Copy" :bounds [191 10 150 20])
+                     field_copy_original
+                     field_copy_copy]))
+
+
+
+(def button_merge
+  (button :text "merge" :bounds [200 65 65 30]))
+
+(def field_merge_a
+  (text :bounds [30 30 150 30]))
+
+(def field_merge_b
+  (text :bounds [190 30 150 30]))
+
+(def field_merge_out
+  (text :bounds [350 30 150 30]))
+
+(def mergepanel
+  (xyz-panel :items [button_merge
+                     (label :text "First Net" :bounds [30 10 150 20])
+                     (label :text "Second Net" :bounds [191 10 150 20])
+                     (label :text "Merged Net" :bounds [352 10 150 20])
+                     field_merge_a
+                     field_merge_b
+                     field_merge_out]))
+
+(def copy_f
+  (frame :size [400 :by 120]
+         :content copypanel ))
+
+(def merge_f
+  (frame :size [550 :by 120]
+         :content mergepanel))
+
+(defn dispose_copy [e]
+  (do
+   	(add_petri (copy_petri
+       (text field_copy_copy)
+       (text field_copy_original)))
+    (dispose! copy_f)
+    (text! field_state (pretty (deref state)))))
+
+(defn dispose_merge [e]
+  (do
+   	(add_petri (hash_merge_petri
+                (text field_merge_out)
+                (text field_merge_a)
+                (text field_merge_b)                
+                {}
+                {}))
+    (dispose! merge_f)
+    (text! field_state (pretty (deref state)))))
+
+(listen button_copy :action dispose_copy)
+(listen button_merge :action dispose_merge)
+
+(defn a-open  [e] nil)
+(defn a-save  [e] nil)
+
+(defn a-copy  [e]
+  (do
+    (-> copy_f show!)
+    (request-focus! field_copy_original)))
+
+(defn a-merge [e]
+  (do
+    (-> merge_f show!)
+    (request-focus! field_merge_a)))
+
+(defn a-save-as [e] nil)
+
+(def menus
+ (let [a-open (action :handler a-open :name "Open" :tip "Open a file")
+       a-copy (action :handler a-copy :name "Copy" :tip "Copy existing Petri Net")
+       a-merge (action :handler a-merge :name "Merge" :tip "Merge two existing Petri Nets")
+       a-save-as (action :handler a-save-as :name "Save As" :tip "Save the current file")]
+   (menubar
+    :items [(menu :text "File" :items [a-open a-save-as])
+            (menu :text "Edit" :items [a-copy a-merge])])))
+
+(config! f :menubar menus)
 
 
 (-> f show!)
