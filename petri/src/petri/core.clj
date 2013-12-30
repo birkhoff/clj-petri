@@ -1,5 +1,9 @@
 (ns petri.core
-  (:use seesaw.core))
+  (:use seesaw.core)
+  (:use seesaw.core
+        [clojure.java.io :only [file]])
+  (:import [javax.swing JFileChooser JEditorPane JScrollPane BorderFactory]
+           java.awt.Font))
 
 
 (use '[clojure.set :only [union]])
@@ -651,7 +655,6 @@ init
                      
                      ]))
 
-(display panel)
 
 
 
@@ -725,8 +728,36 @@ init
 (listen button_copy :action dispose_copy)
 (listen button_merge :action dispose_merge)
 
-(defn a-open  [e] nil)
-(defn a-save  [e] nil)
+
+
+;; save and open functions
+
+;(def current-file (atom (file (System/getProperty "user.home") ".dicscratch")))
+
+
+(defn select-file []
+  (let [chooser (JFileChooser.)]
+    (.showDialog chooser panel "Select")
+    (.getSelectedFile chooser)))
+
+
+
+(defn a-save-as [e]
+  (when-let [selected (select-file)]
+    (spit selected (str (deref state)))))
+
+
+(defn a-open  [e]
+  (when-let [selected (select-file)]
+   (reset! state  (read-string (slurp selected)))
+    ;(text! field_state  (read-string (slurp selected)))
+   (text! field_state (pretty (deref state)))
+    ;(text! field_state (str selected))
+    ))
+
+
+(reset! state (read-string (slurp "/Users/Mike/Desktop/state.txt")))
+
 
 (defn a-copy  [e]
   (do
@@ -743,7 +774,7 @@ init
     (delete_petri (text field_net))
     (text! field_state (pretty (deref state)))))
 
-(defn a-save-as [e] nil)
+
 
 (def menus
  (let [a-open (action :handler a-open :name "Open" :tip "Open a file")
@@ -755,10 +786,14 @@ init
     :items [(menu :text "File" :items [a-open a-save-as])
             (menu :text "Edit" :items [a-copy a-merge a-delete])])))
 
+
+
+(display panel)
+
 (config! f :menubar menus)
 
-
 (-> f show!)
+
 
 
 
