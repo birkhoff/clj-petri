@@ -1,7 +1,12 @@
-(ns petri.core)
+(ns petri.core
+  (:use seesaw.core))
 
-(use '[clojure.set])
+
+(use '[clojure.set :only [union]])
+(use '[clojure.set :only [rename-keys]])
 (use '[clojure.string :only (replace-first)])
+
+
 
 
 (defn keyword_to_string [k]
@@ -79,6 +84,7 @@
 (defn contains_edge [t t1]
   (first (contains_edge_all t t1)))
 
+
 (contains_edge #{[:a ] [:a :b 9] [:a :c] [:b :c]} [:a :b 3])
 
 
@@ -127,11 +133,9 @@
 
 
 
-                                        ; adds an edge to a hashset of edges with the keyword
-                                        ; "${NameOfVertix}_${NameOfTransition}"
+                                        ; adds an edge to a hashset of edges with a keyword
                                         ; for easier replacement of
                                         ; identical edges
-                                        ; !!!!!!!!!!!!!!!
                                         ; first element transition
                                         ; second vertix
 
@@ -392,6 +396,10 @@
 (state_transition_fireable? "A_B" "y")
 
 
+                            ;fires tokens to a transition
+                            ;and returns the vertex minus the used
+                            ;tokens
+
 
 (defn fire_to_edge [net e]
   (let [cost  (get e 2)
@@ -402,11 +410,19 @@
     {vhash [(first v1) (- (second v1) cost)]}))
 
 
+
+                               ;returns a set of vertices
+                               ;including the fired vertices
+
 (defn fire_to_all_edges [edges net]
   (let [n ((keyword net) (deref state))
         vertices (:vertices n)]
     (conj vertices (reduce merge (for [X edges]
                               (fire_to_edge net X))))))
+
+
+
+                                        ;adds token to connected vertices from a transition
 
 (defn fire_from_edge [vertices net e]
   (let [cost  (get e 2)
@@ -414,20 +430,26 @@
         v1    (vhash vertices)]
     {vhash [(first v1) (+ (second v1) cost)]}))
 
+
+                                        ;fire every edge from a
+                                        ;transition returns a set of
+                                        ;vertices from the net
+
 (defn fire_from_all_edges [vertices edges net]
   (conj vertices (reduce merge (for [X edges]
                                  (fire_from_edge vertices net X)))))
 
 
 
-;  (swap! state assoc (keyword net) (assoc n :vertices ( assoc v v1 [vertix cats] ))
+                                        ; fires a transition and swaps
+                                        ; the vertices 
+
 
 (defn state_fire_transition [net t]
   (let [edges (edges_to_transition_hash net t)
         outs  (edges_from_transition_hash net t)
         n     ((keyword net) (deref state))]
-    (if (state_transition_hash_fireable net t)
-              
+    (if (state_transition_hash_fireable net t)       
       (swap! state assoc (keyword net)
              (assoc n :vertices (fire_from_all_edges (fire_to_all_edges edges net) outs net))))))
 
@@ -457,85 +479,161 @@
      (first (second X)))
    args))
 
-(non_empty "Petri_A" "a")
+(non_empty "Petri_A" "c")
+
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Formalery Testcases
+;;;;;;;;;
 
 init
 
-(add_petri (petri "Petri_A"))
-(add_petri (petri "Petri_B"))
-(add_petri (petri "Petri_C"))
-;(deref state)
-(state_add_vertix "Petri_A" "v-a" 9)
-(state_add_vertix "Petri_A" "v-b" 6) 
-(state_add_vertix "Petri_A" "c" 0)
-
-(state_add_transition "Petri_A" "z")
-(state_add_transition "Petri_A" "y")
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                   GUI                     ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(def f (frame :title "Petri Netz Simulator 2014"))
+(config! f :size [1100 :by 800])
 
-(state_add_edges_in "Petri_A" "v-a" "z" 9)
-(state_add_edges_in "Petri_A" "v-a" "z" 8)
-(state_add_edges_in "Petri_A" "v-a" "y" 7)
-(state_add_edges_in "Petri_A" "v-b" "y" 6)
+(defn display [content]
+  (config! f :content content)
+  content)
 
-(state_add_edges_out "Petri_A"  "v-a" "y" 8)
-(state_add_edges_out "Petri_A" "v-a" "z" 5)
-(state_add_edges_out "Petri_A" "v-b" "y" 9)
-
-
-(state_get_edges_to_transition "Petri_A" "z")
-
-(state_get_edges_from_transition "Petri_A" "y")
+(def lbl (label ))
+(config! lbl :background :grey :foreground "#00f")
+(display lbl)
 
 
 
-(state_add_vertix "Petri_B" "d" 7)
-;(state_add_vertix "Petri_B" "e" 11)
-(state_add_transition "Petri_B" "z")
-(state_add_edges_out "Petri_B" "d" "z" 10)
-(state_add_edges_in "Petri_B" "d" "z" 9)
+(def field_net
+  (text :bounds [10 40 300 30] ))
 
-(deref state)
+(def field_vertex
+  (text :bounds [10 170 230 30] ))
 
-;(delete_petri "Petri_C")
+(def field_vertex_tokens
+  (text :bounds [260 170 50 30]))
 
-(deref state)
-                                        ; own_petri [name vertices transitions in out]
-;(get_vertix_hash "Petri_A" "v-a")
+(def field_transition
+  (text :bounds [10 290 220 30]))
 
-;(get_transition_hash "Petri_A" "kk")
+(def field_state
+  (text :bounds [400 40 600 700] :multi-line? true :editable? false :wrap-lines? true))
+
+(def button_add_net
+  (button :text "ADD NET" :bounds [8 70 150 30] ))
+
+(def button_add_vertex
+  (button :text "ADD VERTEX" :bounds [8 200 150 30]))
+
+(def button_add_transition
+  (button :text "ADD TRANSITION" :bounds [8 320 150 30]))
+
+(def button_add_edges_in
+  (button :text "ADD EDGE FROM VERTEX TO TRANSITION" :bounds [8 400 300 30]))
+
+(def button_add_edges_out
+  (button :text "ADD EDGE FROM TRANSITION TO VERTEX" :bounds [8 450 300 30]))
+
+(def button_fire
+  (button :text "FIRE" :bounds [200 320 50 30]))
+
+(defn pretty_a [input]                                     
+  (clojure.string/replace (str input)
+                          #"(.vertices)|(.edges_in)|(.edges_out)|(.transitions)" "\n       $1$2$3$4") )
+
+(defn pretty_b [input]
+  (clojure.string/replace (str input)
+                          "}}," "}},\n"))
+
+(defn pretty [input]
+  (pretty_b (pretty_a input)))
 
 
-                                        
-                                        
-(hash_merge_petri "A_B" "Petri_A" "Petri_B" {(get_vertix_hash "Petri_A"  "v-a") (get_vertix_hash "Petri_B" "d")}  {(get_transition_hash "Petri_A" "z") (get_transition_hash "Petri_B" "z") })
+(pretty "{} {}")
+;;;; Listeners
 
-(add_petri (hash_merge_petri "REAL_A" "Petri_A" "Petri_A" {}  {}))
+(listen button_add_net :action
+        (fn [e] (do
+                 (add_petri (petri (text field_net)))
+                 (text! field_state (pretty (deref state))))))
 
-                                        ;
-(add_petri (hash_merge_petri "A_B" "Petri_A" "Petri_B"
-                                        ;
-{(get_vertix_hash "Petri_A"  "v-a") (get_vertix_hash "Petri_B" "d")}
-                                        ;
-{(get_transition_hash "Petri_A" "z") (get_transition_hash "Petri_B"
-                                ;
-"z") }))
-
+(defn parse_token []
+  (if (empty? (text field_vertex_tokens))
+    0
+    (let [p (read-string (text field_vertex_tokens))]
+           (if (number? p) p 0))))
 
 
-(copy_petri "cp" "Petri_A")
 
-(state_get_edges_to_transition "Petri_A" "y")
+(listen button_add_vertex :action
+        (fn [e] (do
+                  (state_add_vertix  (text field_net)
+                                     (text field_vertex)
+                                     (parse_token))
+                 (text! field_state (pretty (deref state))))))
 
-(state_fire_transition "Petri_A" :563948993)
+(listen button_add_transition :action
+        (fn [e] (do
+                 (state_add_transition  (text field_net)
+                                    (text field_transition))
+                 (text! field_state (pretty (deref state))))))
+
+(listen button_add_edges_in :action
+        (fn [e] (do
+                 (state_add_edges_in (text field_net)
+                                     (text field_vertex)
+                                     (text field_transition)
+                                     (parse_token))
+                 (text! field_state (pretty (deref state))))))
+
+(listen button_add_edges_out :action
+        (fn [e] (do
+                 (state_add_edges_out (text field_net)
+                                     (text field_vertex)
+                                     (text field_transition)
+                                     (parse_token))
+                 (text! field_state (pretty (deref state))))))
 
 
-;(rename-keys '{:a 9 :c 2 :d 4} '{:a :b})
 
-;(:tunac-Petri_A-v-a(:vertices (mergesimple "tunac" "Petri_A"
-;"Petri_B" {} {})))
+(listen button_fire :action
+        (fn [e] (do
+                 (state_fire_transition
+                     (text field_net)
+                     (get_transition_hash (text field_net) (text field_transition)))
+                 (text! field_state (pretty (deref state))) )))
 
-;(merge "tunac" "Petri_A" "Petri_B")
+
+
+(def panel
+  (xyz-panel :items [(label :text "Name of Net:" :bounds [10 10 100 30])
+                     field_net
+                     (label :text "Name of Vertex:" :bounds [10 140 110 30])
+                     (label :text "Tokens:" :bounds [250 140 50 30])
+                     field_vertex
+                     field_vertex_tokens
+                     (label :text "Name of Transition:" :bounds [10 260 200 30])
+                     field_transition
+
+                     field_state
+                     
+                     button_add_net
+                     button_add_vertex
+                     button_add_transition
+                     button_add_edges_in
+                     button_add_edges_out
+                     button_fire
+
+                     
+                     ]))
+
+(display panel)
+
+
+(-> f show!)
+
