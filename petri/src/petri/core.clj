@@ -522,7 +522,7 @@ init
   (text :bounds [10 290 220 30]))
 
 (def field_state
-  (text :bounds [400 40 600 700] :multi-line? true :editable? false :wrap-lines? true))
+  (text :bounds [400 40 600 700] :multi-line? true :editable? false :wrap-lines? false) )
 
 (def button_add_net
   (button :text "ADD NET" :bounds [8 70 150 30] ))
@@ -620,7 +620,7 @@ init
                      (label :text "Name of Transition:" :bounds [10 260 200 30])
                      field_transition
 
-                     field_state
+                     (scrollable field_state :bounds [400 40 600 700])
                      
                      button_add_net
                      button_add_vertex
