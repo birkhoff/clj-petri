@@ -47,7 +47,7 @@
                                         ;deletes a specified petri net (name of petri net)
 
 (defn delete_petri [petri]
-  (swap! state (dissoc (deref state) (keyword petri))))  
+  (swap! state dissoc (deref state) (keyword petri) ))
 
 
                                         ; adds a vertex to the specified net
@@ -738,19 +738,31 @@ init
     (-> merge_f show!)
     (request-focus! field_merge_a)))
 
+(defn a-delete [e]
+  (do
+    (delete_petri (text field_net))
+    (text! field_state (pretty (deref state)))))
+
 (defn a-save-as [e] nil)
 
 (def menus
  (let [a-open (action :handler a-open :name "Open" :tip "Open a file")
        a-copy (action :handler a-copy :name "Copy" :tip "Copy existing Petri Net")
        a-merge (action :handler a-merge :name "Merge" :tip "Merge two existing Petri Nets")
+       a-delete (action :handler a-delete :name "Delete Net" :tip "Deletes the Petri Net specified in the \"Name of Net\" field" )
        a-save-as (action :handler a-save-as :name "Save As" :tip "Save the current file")]
    (menubar
     :items [(menu :text "File" :items [a-open a-save-as])
-            (menu :text "Edit" :items [a-copy a-merge])])))
+            (menu :text "Edit" :items [a-copy a-merge a-delete])])))
 
 (config! f :menubar menus)
 
 
 (-> f show!)
+
+
+
+
+
+
 
