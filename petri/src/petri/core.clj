@@ -8,6 +8,7 @@
 
 (use '[clojure.set :only [union]])
 (use '[clojure.set :only [rename-keys]])
+(use '[clojure.set :only [map-invert]])
 (use '[clojure.string :only (replace-first)])
 
 
@@ -214,11 +215,13 @@
                                         ; petrinets
                                         ; if two vertices are merged their units are summed up
 
+;BUG!
 
 (defn unite [name va vb vertices]
   (reduce merge
     (for [v  (union va vb)]
-      (if (contains? vertices (first v))
+      (if (or (contains? vertices (first v))
+              (contains? (map-invert vertices) (first v)))
         { (keyword_hash_it name ((first v) vertices))
           [ (first (second v))
                (+(second (second v))
@@ -678,7 +681,7 @@ init
 
 
 (def button_merge
-  (button :text "merge" :bounds [200 65 65 30]))
+  (button :text "merge" :bounds [200 195 65 30]))
 
 (def field_merge_a
   (text :bounds [30 30 150 30]))
@@ -689,21 +692,31 @@ init
 (def field_merge_out
   (text :bounds [350 30 150 30]))
 
+(def field_merge_vertices
+  (text :bounds [30 90 470 30] :tip "Please enter the hash values of the vertices you want to merge    e.g.  :19281 :2866 :19280 :2867     Each pair of two consecutive hash values will be merged as one vertex" ))
+
+(def field_merge_transitions
+  (text :bounds [30 150 470 30]  :tip "Please enter the hash values of the transitions you want to merge    e.g.  :19281 :2866 :19280 :2867    Each pair of two consecutive hash values will be merged as one transition"))
+
 (def mergepanel
   (xyz-panel :items [button_merge
                      (label :text "First Net" :bounds [30 10 150 20])
                      (label :text "Second Net" :bounds [191 10 150 20])
                      (label :text "Merged Net" :bounds [352 10 150 20])
+                     (label :text "Vertices which will be merged:" :bounds [30 70 300 20])
+                     (label :text "Transitions which will be merged:" :bounds [30 130 300 20])
                      field_merge_a
                      field_merge_b
-                     field_merge_out]))
+                     field_merge_out
+                     field_merge_vertices
+                     field_merge_transitions]))
 
 (def copy_f
   (frame :size [400 :by 120]
          :content copypanel ))
 
 (def merge_f
-  (frame :size [550 :by 120]
+  (frame :size [550 :by 250]
          :content mergepanel))
 
 (defn dispose_copy [e]
@@ -720,8 +733,8 @@ init
                 (text field_merge_out)
                 (text field_merge_a)
                 (text field_merge_b)                
-                {}
-                {}))
+                (read-string (str "{" (text field_merge_vertices) "}"))
+                (read-string (str "{"(text field_merge_transitions) "}"))))
     (dispose! merge_f)
     (text! field_state (pretty (deref state)))))
 
@@ -793,11 +806,4 @@ init
 (config! f :menubar menus)
 
 (-> f show!)
-
-
-
-
-
-
-
 
