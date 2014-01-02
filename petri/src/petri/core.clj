@@ -32,13 +32,14 @@
                                         ;structure of an empty petri net
 
 
-(defn petri [name] {:name name , :vertices {}, :transitions {}, :edges_in #{}, :edges_out #{}} )
+(defn petri [name] {:name name, :properties '() , :vertices {}, :transitions {}, :edges_in #{}, :edges_out #{}} )
 
 
                                         ;constructor for a custum petri net
 
-(defn own_petri [name vertices transitions in out]
-   {:name name , :vertices vertices, :transitions transitions, :edges_in in, :edges_out out})
+(defn own_petri [name vertices transitions in out properties]
+  {:name name , :properties properties,:vertices vertices, :transitions transitions, :edges_in in, :edges_out out })
+
 
 
 
@@ -272,6 +273,7 @@
      (unite_transitions name (:transitions na) (:transitions nb) same_transitions)
      (unite_edges name (:edges_in na) (:edges_in nb) same_vertices same_transitions)
      (unite_edges name (:edges_out na) (:edges_out nb) same_vertices same_transitions)
+     '()
      )))
 
 
@@ -309,7 +311,8 @@
      (rename_vertices copy_name (:vertices copy)) 
      (rename_transitions copy_name (:transitions copy))
      (rename_edges copy_name (:edges_in copy))
-     (rename_edges copy_name (:edges_out copy)))))
+     (rename_edges copy_name (:edges_out copy))
+     '())))
 
 
 
@@ -505,6 +508,7 @@ init
 ;;                   GUI                     ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+
 (def f (frame :title "Petri Netz Simulator 2014"))
 (config! f :size [1100 :by 800])
 
@@ -560,7 +564,7 @@ init
 
 (defn pretty_a [input]                                     
   (clojure.string/replace (str input)
-                          #"(.vertices)|(.edges_in)|(.edges_out)|(.transitions)" "\n       $1$2$3$4") )
+                          #"(.properties)|(.vertices)|(.edges_in)|(.edges_out)|(.transitions)" "\n       $1$2$3$4$5") )
 
 
 
@@ -581,49 +585,59 @@ init
 (defn update_state_field [e]
   (text! field_state (pretty (deref state))))
 
+                                        ;escaped Text where space is
+                                        ;replaced by _
+                                     
 
+(defn esc_text [field]
+  (clojure.string/replace (text field) " " "_"))
 
 ;;;; Listeners
 
 (listen button_add_net :action
-        (fn [e] (do
-                 (add_petri (petri (text field_net)))
-                 (text! field_state (pretty (deref state))))))
+        (fn [e] (if (not= (text field_net) "")
+                 (do 
+                   (add_petri (petri  (esc_text field_net)))
+                   (text! field_state (pretty (deref state)))))))
 
 (defn parse_token []
   (if (empty? (text field_vertex_tokens))
     0
-    (let [p (read-string (text field_vertex_tokens))]
+    (let [p (read-string (esc_text field_vertex_tokens))]
            (if (number? p) p 0))))
 
 
 
 (listen button_add_vertex :action
-        (fn [e] (do
-                  (state_add_vertix  (text field_net)
-                                     (text field_vertex)
-                                     (parse_token))
-                 (text! field_state (pretty (deref state))))))
+        (fn [e]
+          (if (and (not= (text field_net) "") (not= text field_vertex) "")
+            (do
+              (state_add_vertix  (esc_text field_net)
+                                 (esc_text field_vertex)
+                                 (parse_token))
+              (text! field_state (pretty (deref state)))))))
 
 (listen button_add_transition :action
-        (fn [e] (do
-                 (state_add_transition  (text field_net)
-                                    (text field_transition))
-                 (text! field_state (pretty (deref state))))))
+        (fn [e]
+          (if (and (not= (text field_net) "") (not= (text field_transition) ""))
+            (do
+              (state_add_transition  (esc_text field_net)
+                                     (esc_text field_transition))
+              (text! field_state (pretty (deref state)))))))
 
 (listen button_add_edges_in :action
         (fn [e] (do
-                 (state_add_edges_in (text field_net)
-                                     (text field_vertex)
-                                     (text field_transition)
+                 (state_add_edges_in (esc_text field_net)
+                                     (esc_text field_vertex)
+                                     (esc_text field_transition)
                                      (parse_token))
                  (text! field_state (pretty (deref state))))))
 
 (listen button_add_edges_out :action
         (fn [e] (do
-                 (state_add_edges_out (text field_net)
-                                     (text field_vertex)
-                                     (text field_transition)
+                 (state_add_edges_out (esc_text field_net)
+                                     (esc_text field_vertex)
+                                     (esc_text field_transition)
                                      (parse_token))
                  (text! field_state (pretty (deref state))))))
 
@@ -632,8 +646,8 @@ init
 (listen button_fire :action
         (fn [e] (do
                  (state_fire_transition
-                     (text field_net)
-                     (get_transition_hash (text field_net) (text field_transition)))
+                     (esc_text field_net)
+                     (get_transition_hash (esc_text field_net) (esc_text field_transition)))
                  (text! field_state (pretty (deref state))) )))
 
 
@@ -722,27 +736,36 @@ init
          :content mergepanel))
 
 (defn dispose_copy [e]
-  (do
-   	(add_petri (copy_petri
-       (text field_copy_copy)
-       (text field_copy_original)))
-    (dispose! copy_f)
-    (text! field_state (pretty (deref state)))))
+  (let [copy     (esc_text field_copy_copy)
+        original (esc_text field_copy_original)]
+    (if (and (not= copy "") (not= original ""))
+      (do
+        (add_petri (copy_petri
+                    copy
+                    original))
+        (dispose! copy_f)
+        (text! field_state (pretty (deref state)))))))
+
 
 (defn dispose_merge [e]
-  (do
-   	(add_petri (hash_merge_petri
-                (text field_merge_out)
-                (text field_merge_a)
-                (text field_merge_b)                
-                (read-string (str "{" (text field_merge_vertices) "}"))
-                (read-string (str "{"(text field_merge_transitions) "}"))))
-    (dispose! merge_f)
-    (text! field_state (pretty (deref state)))))
+  (let [out (text field_merge_out)
+             a   (esc_text field_merge_a)
+             b   (esc_text field_merge_b)]
+    (if (and (not= out "") (not= a "") (not= b ""))
+      (do
+        (add_petri (hash_merge_petri
+                    out
+                    a
+                    b                
+                    (read-string (str "{" (text field_merge_vertices) "}"))
+                    (read-string (str "{"(text field_merge_transitions) "}"))))
+        (dispose! merge_f)
+        (text! field_state (pretty (deref state)))))))
+
+
 
 (listen button_copy :action dispose_copy)
 (listen button_merge :action dispose_merge)
-
 
 
 ;; save and open functions
@@ -765,10 +788,8 @@ init
 (defn a-open  [e]
   (when-let [selected (select-file)]
    (reset! state  (read-string (slurp selected)))
-    ;(text! field_state  (read-string (slurp selected)))
-   (text! field_state (pretty (deref state)))
-    ;(text! field_state (str selected))
-    ))
+   (text! field_state (pretty (deref state)))))
+
 
 
 (reset! state (read-string (slurp "/Users/Mike/Desktop/state.txt")))
