@@ -220,13 +220,15 @@
 (defn unite [name va vb vertices]
   (reduce merge
     (for [v  (union va vb)]
-      (if (or (contains? vertices (first v))
-              (contains? (map-invert vertices) (first v)))
+      (if (contains? vertices (first v))
+              
+              
         { (keyword_hash_it name ((first v) vertices))
           [ (first (second v))
                (+(second (second v))
-               (second(((first v) vertices) vb)))] }
-        { (keyword_hash_it name (first v))  (second v)})   )))
+               (second (((first v) vertices) vb)))] }
+        (if (not(contains? (map-invert vertices) (first v)))
+          { (keyword_hash_it name (first v))  (second v)}))   )))
 
                                         ;unites transitions from two petrinets
 
