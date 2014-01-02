@@ -208,6 +208,27 @@
 
 
 
+; renames a vertex given a hash and replacing the string representation
+
+(defn rename_vertex [net hash_v new_name]
+  (let [n ((keyword net) (deref state))]
+    (if (not= hash_v nil) (swap! state assoc (keyword net)
+                  (assoc n :vertices
+                         (assoc (:vertices n) hash_v [new_name (second(hash_v (:vertices n)))]))))))
+
+
+;renames a transition for a given hash value
+
+(defn rename_transition [net hash_v new_name]
+   (let [n ((keyword net) (deref state))]
+     (if (not= nil hash_v)
+       (swap! state assoc (keyword net)
+                   (assoc n :transitions
+                          (assoc (:transitions n) hash_v [new_name]))))))
+
+;(rename_vertex "Net_A" :-1965068733 "yoko")
+;(rename_transition "Net_A" :-1965068710 "klaas")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;            Merging                ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -216,7 +237,6 @@
                                         ; petrinets
                                         ; if two vertices are merged their units are summed up
 
-;BUG!
 
 (defn unite [name va vb vertices]
   (reduce merge
@@ -686,6 +706,11 @@ init
 (def field_copy_copy
   (text :bounds [190 30 150 30]))
 
+(def field_rename
+  (text :bounds [30 30 150 30]))
+
+(def field_rename_transition
+  (text :bounds [30 30 150 30]))
 
 (def copypanel
   (xyz-panel :items [button_copy
@@ -727,6 +752,22 @@ init
                      field_merge_vertices
                      field_merge_transitions]))
 
+(def button_rename
+  (button :text "RENAME" :bounds [60 65 80 30]))
+
+(def button_rename_t
+  (button :text "RENAME" :bounds [60 65 80 30]))
+
+(def renamepanel
+  (xyz-panel :items [button_rename
+                     (label :text "New name:" :bounds [30 10 150 20])
+                     field_rename]))
+
+(def renamepanel_transition
+  (xyz-panel :items [button_rename_t
+                     (label :text "New name:" :bounds [30 10 150 20])
+                     field_rename_transition]))
+
 (def copy_f
   (frame :size [400 :by 120]
          :content copypanel ))
@@ -734,6 +775,14 @@ init
 (def merge_f
   (frame :size [550 :by 250]
          :content mergepanel))
+
+(def rename_f
+  (frame :size [230 :by 120]
+         :content renamepanel))
+
+(def rename_f_t
+  (frame :size [230 :by 120]
+         :content renamepanel_transition) )
 
 (defn dispose_copy [e]
   (let [copy     (esc_text field_copy_copy)
@@ -762,10 +811,31 @@ init
         (dispose! merge_f)
         (text! field_state (pretty (deref state)))))))
 
+(defn dispose_rename [e]
+  (let [original    (get_vertix_hash (esc_text field_net) (esc_text field_vertex))
+        rename (esc_text field_rename)]
+    (if  (not= original "")
+      (do
+        (rename_vertex (esc_text field_net) original rename)
+        (dispose! rename_f)
+        (text! field_state (pretty (deref state)))))))
+
+(defn dispose_rename_transition [e]
+  (let [original    (get_transition_hash (esc_text field_net) (esc_text field_transition))
+        rename (esc_text field_rename_transition)]
+    (if  (not= original "")
+      (do
+        (rename_transition (esc_text field_net) original rename)
+        (dispose! rename_f)
+        (text! field_state (pretty (deref state)))))))
+
 
 
 (listen button_copy :action dispose_copy)
 (listen button_merge :action dispose_merge)
+(listen button_rename :action dispose_rename)
+(listen button_rename_t :action dispose_rename_transition)
+
 
 
 ;; save and open functions
@@ -810,6 +880,14 @@ init
     (delete_petri (text field_net))
     (text! field_state (pretty (deref state)))))
 
+(defn a-rename [e]
+  (do
+    (-> rename_f show!)))
+
+(defn a-rename-t [e]
+  (do
+    (-> rename_f_t show!)))
+
 
 
 (def menus
@@ -817,10 +895,13 @@ init
        a-copy (action :handler a-copy :name "Copy" :tip "Copy existing Petri Net")
        a-merge (action :handler a-merge :name "Merge" :tip "Merge two existing Petri Nets")
        a-delete (action :handler a-delete :name "Delete Net" :tip "Deletes the Petri Net specified in the \"Name of Net\" field" )
+       a-rename (action :handler a-rename :name "Rename Vertex" :tip "Renames vertex specified in the Vertex label"
+                        )
+       a-rename-t (action :handler a-rename-t :name "Rename Transition" :tip "Renames transition specified in the Transition label")
        a-save-as (action :handler a-save-as :name "Save As" :tip "Save the current file")]
    (menubar
     :items [(menu :text "File" :items [a-open a-save-as])
-            (menu :text "Edit" :items [a-copy a-merge a-delete])])))
+            (menu :text "Edit" :items [a-copy a-merge a-rename a-rename-t a-delete])])))
 
 
 
@@ -829,4 +910,5 @@ init
 (config! f :menubar menus)
 
 (-> f show!)
+
 
