@@ -402,31 +402,35 @@
           (into #{} (map first (net_fireable_edges net)))
           (into #{} (map first (net_not_fireable_edges net)))))
 
-(state_get_fireable_transitions "Petri_A")
+(state_get_fireable_transitions "Net_A")
 
                                         ;checks if net is alive
 
 (defn net_alive [net]
   (not (empty? (state_get_fireable_transitions net))))
 
-(net_alive "Petri_A")
+(net_alive "Net_A")
 
                                         ; sees if a transition with
                                         ; the name t is fireable
 
 
 (defn state_transition_fireable? [net t]
-  (elements_in_list? (state_get_edges_to_transition net t) (net_fireable_edges net)))
+  (contains? (into  #{}
+           (for [X (get_all_transition_hashes net t)]
+             (first (X (:transitions ((keyword net) (deref state))))))) t))
 
                                         ; sees if a transition hash is firable
 
-(defn state_transition_hash_fireable [net hash]
+(defn state_transition_hash_fireable? [net hash]
   (contains? (state_get_fireable_transitions net) hash))
 
 
-(state_transition_hash_fireable "Petri_A" :563948994)
-(state_transition_fireable? "A_B" "y")
-
+(state_transition_hash_fireable? "Net_A" :-1965068709)
+(state_transition_fireable? "A_B" "z")
+(state_get_fireable_transitions "Net_A")
+(net_fireable_edges "Net_A")
+(state_get_edges_to_transition "Net_A"  "z") 
 
                             ;fires tokens to a transition
                             ;and returns the vertex minus the used
@@ -486,8 +490,9 @@
              (assoc n :vertices (fire_from_all_edges (fire_to_all_edges edges net) outs net))))))
 
 
-(edges_from_transition_hash "Petri_A" :563948993)
+(edges_from_transition_hash "Net_A" :-1965068710)
 
+; DSL transtion alive: name of net and variable names of transitions
 
 (defn transition_alive [net & args]
   (least_one_elements_in_list?
@@ -495,7 +500,7 @@
      (first (X (:transitions ((keyword net) (deref state))))))
      args))
 
-(transition_alive "Petri_A" "y" "a")
+(transition_alive "Net_A" "y" "z")
 
 (defn non_empty_vertices [net]
   (into #{} (filter identity
@@ -503,7 +508,7 @@
         (if (< 0 (second (second X)))
          X)))))
 
-(non_empty_vertices "Petri_A")
+(non_empty_vertices "Net_A")
 
 (defn non_empty [net & args]
   (least_one_elements_in_list? 
@@ -511,9 +516,39 @@
      (first (second X)))
    args))
 
-(non_empty "Petri_A" "c")
+
+(non_empty "Net_A" "a" "b")
+(eval '(non_empty "Net_A" "a" "b"))
+
+                                        ; Adding a Property to the
+                                        ; specified net which can be
+                                        ; evaluated whenever necessary
+
+                                        ; (net_alive "Net_A")
+                                        ; (transition_alive "Net_A" "y" "z")
+                                        ; (non_empty "Net_A" "a" "b")
+
+(defn delete_property [net]
+  (let [n ((keyword net) (deref state))
+        p (:properties n)]
+    (swap! state assoc (keyword net) (assoc n :properties '()))))
+
+(defn add_property [net property]
+  (let [n ((keyword net) (deref state))
+        p (:properties n)]
+    (swap! state assoc (keyword net) (assoc n :properties (conj p property)))))
+
+(add_property "Net_A" "(< 1 2)")
+(delete_property "Net_A")
+
+(defn eval_property [net]
+  (for [X (:properties ((keyword net) (deref state)))]
+    [X (eval (read-string X))]))
+
+(eval_property "Net_A")
 
 
+;(swap! state assoc (keyword net) (assoc n :transitions (assoc t t1 [transition])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Formalery Testcases
@@ -557,6 +592,16 @@ init
 (def field_state
   (text :bounds [400 40 600 700] :multi-line? true :editable? false :wrap-lines? false) )
 
+(def field_property
+  (text :bounds [10 570 300 30]))
+
+(def field_eval_property
+  (text :bounds [10 610 300 60] :multi-line? true :editable? false))
+
+
+
+
+
 (def button_add_net
   (button :text "ADD NET" :bounds [8 70 150 30] ))
 
@@ -575,6 +620,11 @@ init
 (def button_fire
   (button :text "FIRE" :bounds [200 320 50 30]))
 
+(def button_add_property
+  (button :text "ADD PROPERTY" :bounds [8 600 150 30]))
+
+(def button_eval_property
+  (button :text "EVALUATE PROPERTIES" :bounds [8 710 190 30]))
 
 
 
@@ -648,6 +698,7 @@ init
 (listen button_add_edges_in :action
         (fn [e] (do
                  (state_add_edges_in (esc_text field_net)
+
                                      (esc_text field_vertex)
                                      (esc_text field_transition)
                                      (parse_token))
@@ -667,9 +718,31 @@ init
         (fn [e] (do
                  (state_fire_transition
                      (esc_text field_net)
-                     (get_transition_hash (esc_text field_net) (esc_text field_transition)))
+                     (get_transition_hash (esc_text field_net)
+                                          (esc_text field_transition)))
                  (text! field_state (pretty (deref state))) )))
 
+(listen button_add_property :action
+        (fn [e] (if (and
+                    (not= (esc_text field_net) "")
+                    (not= (text field_property) ""))
+                 (do
+                    (add_property (esc_text field_net) (text field_property))
+                    (text! field_state (pretty (deref state))) ))))
+
+(defn pretty_2 [text]
+  (clojure.string/replace text "]" "]\n"))
+
+
+;this doesn't work somehow ...
+
+(listen button_eval_property :action
+        (fn [e] (if (not= (esc_text field_net) "")
+                 (do
+                   (text! field_eval_property (pretty_2
+                                               (apply str (eval_property (esc_text field_net)))))))))
+
+;(text! field_eval_property (apply str (eval_property (esc_text field_net))))
 
 
 (def panel
@@ -691,6 +764,10 @@ init
                      button_add_edges_out
                      button_fire
 
+                     field_property
+                     button_add_property
+                     (scrollable field_eval_property :bounds [10 645 300 60])
+                     button_eval_property
                      
                      ]))
 
@@ -877,7 +954,7 @@ init
 
 (defn a-delete [e]
   (do
-    (delete_petri (text field_net))
+    (delete_petri (esc_text field_net))
     (text! field_state (pretty (deref state)))))
 
 (defn a-rename [e]
@@ -888,7 +965,10 @@ init
   (do
     (-> rename_f_t show!)))
 
-
+(defn a-delete-properties [e]
+  (do
+    (delete_property (esc_text field_net))
+     (text! field_state (pretty (deref state)))))
 
 (def menus
  (let [a-open (action :handler a-open :name "Open" :tip "Open a file")
@@ -898,10 +978,12 @@ init
        a-rename (action :handler a-rename :name "Rename Vertex" :tip "Renames vertex specified in the Vertex label"
                         )
        a-rename-t (action :handler a-rename-t :name "Rename Transition" :tip "Renames transition specified in the Transition label")
+       a-delete-properties (action :handler a-delete-properties :name "Delete Properties"
+                                   :tip "Deletes all properties of the current specified net")
        a-save-as (action :handler a-save-as :name "Save As" :tip "Save the current file")]
    (menubar
     :items [(menu :text "File" :items [a-open a-save-as])
-            (menu :text "Edit" :items [a-copy a-merge a-rename a-rename-t a-delete])])))
+            (menu :text "Edit" :items [a-copy a-merge a-rename a-rename-t a-delete-properties a-delete])])))
 
 
 
@@ -910,5 +992,6 @@ init
 (config! f :menubar menus)
 
 (-> f show!)
+
 
 
