@@ -485,7 +485,7 @@
   (let [edges (edges_to_transition_hash net t)
         outs  (edges_from_transition_hash net t)
         n     ((keyword net) (deref state))]
-    (if (state_transition_hash_fireable net t)       
+    (if (state_transition_hash_fireable? net t)       
       (swap! state assoc (keyword net)
              (assoc n :vertices (fire_from_all_edges (fire_to_all_edges edges net) outs net))))))
 
@@ -742,7 +742,7 @@ init
                    (text! field_eval_property (pretty_2
                                                (apply str (eval_property (esc_text field_net)))))))))
 
-;(text! field_eval_property (apply str (eval_property (esc_text field_net))))
+(text! field_eval_property (pretty_2 (apply str (eval_property (esc_text field_net)))))
 
 
 (def panel
