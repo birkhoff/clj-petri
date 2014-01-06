@@ -235,21 +235,33 @@
 
                                         ; unites vertices from two
                                         ; petrinets
-                                        ; if two vertices are merged their units are summed up
+                                        ; if two vertices use max
 
+                                        ; merge-with
+                                        ;second approach
+
+(defn max_v [[a x] [b y]]
+  (if (> x y)
+    [a x]
+    [b y]))
+
+
+(defn unite_vertices [va vb vertices]
+  (merge-with max_v
+              (rename-keys va vertices)
+              (rename-keys vb vertices)))
 
 (defn unite [name va vb vertices]
-  (reduce merge
-    (for [v  (union va vb)]
-      (if (contains? vertices (first v))
-              
-              
-        { (keyword_hash_it name ((first v) vertices))
-          [ (first (second v))
-               (+(second (second v))
-               (second (((first v) vertices) vb)))] }
-        (if (not(contains? (map-invert vertices) (first v)))
-          { (keyword_hash_it name (first v))  (second v)}))   )))
+  (let [v_a_b (unite_vertices va vb vertices)]
+    (rename-keys v_a_b
+                 (reduce merge
+                         (for [X (keys v_a_b)]
+                           {X (keyword_hash_it name X)})))))
+
+
+(unite "net_a" {:a [:a 5]} {:b [:b 10]} {:a :b})
+
+
 
                                         ;unites transitions from two petrinets
 
@@ -737,8 +749,11 @@ init
 ;this doesn't work somehow ...
 
 (listen button_eval_property :action
-        (fn [e] (if (not= (esc_text field_net) "")
+        (fn [e]
+          (println "foo")
+          (if (not= (esc_text field_net) "")
                  (do
+                   
                    (text! field_eval_property (pretty_2
                                                (apply str (eval_property (esc_text field_net)))))))))
 
