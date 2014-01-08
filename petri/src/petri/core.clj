@@ -10,6 +10,7 @@
 (use '[clojure.set :only [rename-keys]])
 (use '[clojure.set :only [map-invert]])
 (use '[clojure.string :only (replace-first)])
+(use '[clojure.walk :only (prewalk-replace)])
 
 
 
@@ -32,7 +33,7 @@
                                         ;structure of an empty petri net
 
 
-(defn petri [name] {:name name, :properties '() , :vertices {}, :transitions {}, :edges_in #{}, :edges_out #{}} )
+(defn petri [name] {:name name, :properties #{} , :vertices {}, :transitions {}, :edges_in #{}, :edges_out #{}} )
 
 
                                         ;constructor for a custum petri net
@@ -295,6 +296,47 @@
                                (replace transitions (replace vertices t)) )))))
 
 
+;this could be used in other functions very well
+
+(defn rename_hash_properties [net va vb ta tb]
+  (reduce merge (for [X (keys (union va vb ta tb))]
+      {X (keyword_hash_it net X)})))
+
+
+(defn unite_properties [net pa pb va vb ta tb vertices transitions old_a old_b]
+  ;(println (rename_hash_properties net va vb ta tb))
+  (prewalk-replace (rename_hash_properties net va vb ta tb)
+        (prewalk-replace (union vertices transitions {old_a net old_b net}) (union pa pb))))
+   
+
+
+(deref state)
+
+(prewalk-replace '{:a :z} '((:a :b) ((:c :d) :a)))
+
+
+
+;; test case
+
+(unite_properties "A_B"
+                   #{'(net_alive) '(transition_alive :-1965068709)
+                     '(or (net_alive "Net_A") (net_alive "Net_B"))}
+
+                   #{'(net_alive) '(transition_alive :-1965068678)
+                     '(or (net_alive "Net_A") (net_alive "Net_B"))}
+
+                   {:-1965068733 ["b" 5], :-1965068734 ["a" 12]}
+                   {:-1965068699 ["e" 1], :-1965068700 ["d" 1]}
+
+                   {:-1965068710 ["y"], :-1965068709 ["z"]}
+                   {:-1965068681 ["w"], :-1965068678 ["x"]}
+                   
+                   {}
+                   {:-1965068709 :-1965068678}
+                   "Net_A" "Net_B"
+                   )
+
+
 
 (defn hash_merge_petri [name net_a net_b same_vertices same_transitions]
   (let [na ((keyword net_a) (deref state))
@@ -305,7 +347,7 @@
      (unite_transitions name (:transitions na) (:transitions nb) same_transitions)
      (unite_edges name (:edges_in na) (:edges_in nb) same_vertices same_transitions)
      (unite_edges name (:edges_out na) (:edges_out nb) same_vertices same_transitions)
-     '()
+     (unite_properties name (:properties na) (:properties nb) (:vertices na) (:vertices nb) (:transitions na) (:transitions nb) same_vertices same_transitions (:name na) (:name nb))
      )))
 
 
@@ -400,8 +442,8 @@
   (reduce disj  (:edges_in ((keyword net) (deref state)))
            (net_fireable_edges net) ))
 
-(net_fireable_edges "Petri_A")
-(net_not_fireable_edges "Petri_A")
+(net_fireable_edges "Net_A")
+(net_not_fireable_edges "Net_A")
 
 (state_get_edges_to_transition "Petri_A" "y")
 
@@ -508,11 +550,12 @@
 
 (defn transition_alive [net & args]
   (least_one_elements_in_list?
-   (for [X (state_get_fireable_transitions net)]
-     (first (X (:transitions ((keyword net) (deref state))))))
-     args))
+   (state_get_fireable_transitions net)
+   args))
 
-(transition_alive "Net_A" "y" "z")
+
+
+(transition_alive "Net_A" :-1965068709 :-1965068710)
 
 (defn non_empty_vertices [net]
   (into #{} (filter identity
@@ -523,13 +566,10 @@
 (non_empty_vertices "Net_A")
 
 (defn non_empty [net & args]
-  (least_one_elements_in_list? 
-   (for [X (non_empty_vertices net)]
-     (first (second X)))
-   args))
+  (least_one_elements_in_list?  (map first (non_empty_vertices net)) args))
 
 
-(non_empty "Net_A" "a" "b")
+(non_empty "Net_A" :-1965068734)
 (eval '(non_empty "Net_A" "a" "b"))
 
                                         ; Adding a Property to the
@@ -550,14 +590,20 @@
         p (:properties n)]
     (swap! state assoc (keyword net) (assoc n :properties (conj p property)))))
 
-(add_property "Net_A" "(< 1 2)")
+(add_property "Net_A" '(or (net_alive "Net_A") (net_alive "Net_B")))
+(add_property "Net_A" '(transition_alive "z"))
 (delete_property "Net_A")
+(deref state)
 
 (defn eval_property [net]
   (for [X (:properties ((keyword net) (deref state)))]
-    [X (eval (read-string X))]))
+    (if (or (= (first X) 'or) (= (first X) 'and) (= (first X) 'not)) 
+              [X  (eval X)]
+              [X  (apply (eval (first X)) (vec (conj (rest X) net))) ])))
 
-(eval_property "Net_A")
+(eval_property "Net_B")
+
+
 
 
 ;(swap! state assoc (keyword net) (assoc n :transitions (assoc t t1 [transition])))
@@ -739,25 +785,32 @@ init
                     (not= (esc_text field_net) "")
                     (not= (text field_property) ""))
                  (do
-                    (add_property (esc_text field_net) (text field_property))
-                    (text! field_state (pretty (deref state))) ))))
+                   (add_property (esc_text field_net) (read-string (text field_property)))
+                   (text! field_state (pretty (deref state))) ))))
 
 (defn pretty_2 [text]
   (clojure.string/replace text "]" "]\n"))
 
+(read-string "'(+ 1 1)")
+(deref state)
 
 ;this doesn't work somehow ...
 
 (listen button_eval_property :action
-        (fn [e]
-          (println "foo")
-          (if (not= (esc_text field_net) "")
-                 (do
-                   
-                   (text! field_eval_property (pretty_2
-                                               (apply str (eval_property (esc_text field_net)))))))))
+  (fn [e]
+    (println "foo")
+    (if (not= (esc_text field_net) "")
+      (text! field_eval_property  (pretty_2
+                                     (apply str (doall (eval_property (esc_text field_net)))))) )))
 
-(text! field_eval_property (pretty_2 (apply str (eval_property (esc_text field_net)))))
+
+(text! field_eval_property (doall (pretty_2
+                              (apply str (doall(eval_property (esc_text field_net)))))))
+
+
+;(text! field_eval_property (pretty_2 (apply str (eval_property (esc_text field_net)))))
+
+
 
 
 (def panel
@@ -829,7 +882,7 @@ init
   (text :bounds [30 90 470 30] :tip "Please enter the hash values of the vertices you want to merge    e.g.  :19281 :2866 :19280 :2867     Each pair of two consecutive hash values will be merged as one vertex" ))
 
 (def field_merge_transitions
-  (text :bounds [30 150 470 30]  :tip "Please enter the hash values of the transitions you want to merge    e.g.  :19281 :2866 :19280 :2867    Each pair of two consecutive hash values will be merged as one transition"))
+  (text :bounds [30 150 470 30]  :tip "Please enter the hash values of the transitions you want to merge    e.g.  :19281 :2866 :19280 :2867    Each pair of two consecutive hash values will be merged as one transition")) 
 
 (def mergepanel
   (xyz-panel :items [button_merge
@@ -954,7 +1007,7 @@ init
 
 
 
-(reset! state (read-string (slurp "/Users/Mike/Desktop/state.txt")))
+(reset! state (read-string (slurp "/Users/Mike/Desktop/state2.txt")))
 
 
 (defn a-copy  [e]
@@ -1007,6 +1060,5 @@ init
 (config! f :menubar menus)
 
 (-> f show!)
-
 
 
