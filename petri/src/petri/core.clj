@@ -14,16 +14,11 @@
 
 
 
-
-(defn keyword_to_string [k]
-  (replace-first (str k) ":" ""))
-
 (defn hash_it [net v]
   (hash (str net v)))
 
 (defn keyword_hash_it [net v]
   (keyword (str (hash_it net v))))
-
 
 (def state (atom nil))
 
@@ -60,12 +55,12 @@
                                         ; adds a vertex to the specified net
                                         ; cats number of units
 
+
 (defn state_add_vertix [net vertix cats]                  ;cats unit
   (let [v  (:vertices ((keyword net) (deref state)))
         n  ((keyword net) (deref state))
         v1 (keyword_hash_it  net  vertix)]
-    (swap! state assoc (keyword net) (assoc n :vertices ( assoc v v1 [vertix cats] )))))
-
+    (swap! state assoc-in [(keyword net) :vertices] (assoc v v1 [vertix cats] ))))
 
 
                                         ; adds a transition
@@ -74,7 +69,7 @@
   (let [t (:transitions ((keyword net) (deref state)))
         n ((keyword net) (deref state))
         t1 (keyword_hash_it net transition)]
-    (swap! state assoc (keyword net) (assoc n :transitions (assoc t t1 [transition])))))
+    (swap! state assoc-in  [(keyword net) :transitions] (assoc t t1 [transition]))))
 
 
                                         ;nil if edge t1 is not included in t
@@ -86,7 +81,7 @@
    (filter identity
      (for [x t]
        (if (and (= (first  x)  (first t1))  (= (second x) (second t1)))
-                 x))) )
+              x))) )
 
 (defn contains_edge [t t1]
   (first (contains_edge_all t t1)))
@@ -100,11 +95,11 @@
 
 
 (defn add_edge [t t1]
-     (let [temp (contains_edge t t1)]
-       (if (= temp nil)
-         (conj t t1)
-         (into #{} (replace {temp t1} t ))))
-     )
+  (let [temp (contains_edge t t1)]
+     (if (= temp nil)
+        (conj t t1)
+        (into #{} (replace {temp t1} t )))))
+
 
 
 (add_edge #{[:a :b 3] [:a :x 3] [:c :d]} [:a :b 4])
@@ -138,8 +133,6 @@
 
 
 
-
-
                                         ; adds an edge to a hashset of edges with a keyword
                                         ; for easier replacement of
                                         ; identical edges
@@ -154,7 +147,7 @@
          v1 (get_vertix_hash  net vertix)
          t1 (get_transition_hash net transition)]
      (if (and  (not= v1 nil) (not= t1 nil) )
-       (swap! state assoc (keyword net) (assoc n :edges_in (add_edge  e [t1 v1 cost]))))) )
+        (swap! state assoc-in [(keyword net) :edges_in] (add_edge e [t1 v1 cost])))))
 
 
                                         ; like edges in just vise versa
@@ -164,29 +157,8 @@
          v1 (get_vertix_hash net vertix)
          t1 (get_transition_hash net transition)]
      (if (and  (not= v1 nil) (not=  t1 nil) )
-       (swap! state assoc (keyword net) (assoc n :edges_out (add_edge e  [t1 v1 cost]))))) )
+       (swap! state assoc-in [(keyword net) :edges_out] (add_edge e  [t1 v1 cost])))) )
 
-
-                                        ;returns a set of vectors
-                                        ;of edges containing specified
-                                        ;transition
-;NEEDS TO BE UPDATED TO USE THE FUNCTION BELOW
-
-(defn state_get_edges_to_transition [net transition]
-  (let [n (keyword net)
-        t1 (get_transition_hash net transition) ]
-    (filter identity
-       (for [x (:edges_in (n (deref state)))]
-         (if (= (first x) t1)  x))) ) )
-
-
-
-(defn state_get_edges_from_transition [net transition]
-  (let [n (keyword net)
-        t1 (get_transition_hash net transition) ]
-    (filter identity
-       (for [x (:edges_out (n (deref state)))]
-         (if (= (first x) t1)  x))) ) )
 
 
                                         ; returns a set of vectors of
@@ -196,9 +168,8 @@
 (defn edges_to_transition_hash [net hash]
   (let [n (keyword net)]
     (into #{} (filter identity
-                     (for [x (:edges_in (n (deref state)))]
-                       (if (= (first x) hash)  x)))) ) )
-
+                  (for [x (:edges_in (n (deref state)))]
+                      (if (= (first x) hash)  x)))) ) )
 
 
 (defn edges_from_transition_hash [net hash]
@@ -209,13 +180,25 @@
 
 
 
+                                        ;returns a set of vectors
+                                        ;of edges containing specified
+                                        ;transition
+
+(defn state_get_edges_to_transition [net transition]
+  (contains? (edges_to_transition_hash net (get_transition_hash net transition)) transition))
+
+(defn state_get_edges_from_transition [net transition]
+  (contains? (edges_from_transition_hash net (get_transition_hash net transition)) transition))
+
+
 ; renames a vertex given a hash and replacing the string representation
 
 (defn rename_vertex [net hash_v new_name]
   (let [n ((keyword net) (deref state))]
-    (if (not= hash_v nil) (swap! state assoc (keyword net)
-                  (assoc n :vertices
-                         (assoc (:vertices n) hash_v [new_name (second(hash_v (:vertices n)))]))))))
+    (if (not= hash_v nil)
+      (swap! state assoc (keyword net)
+                (assoc n :vertices
+                     (assoc (:vertices n) hash_v [new_name (second(hash_v (:vertices n)))]))))))
 
 
 ;renames a transition for a given hash value
