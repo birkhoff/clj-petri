@@ -161,11 +161,11 @@
 
 
 (listen button_fire :action
-        (fn [e] (do
+        (fn [e] (doall
                  (sim/state_fire_transition
                      (esc_text field_net)
-                     (net/get_transition_hash (esc_text field_net)
-                                          (esc_text field_transition)))
+                     (net/get_transition_hash
+                      ((keyword (esc_text field_net)) @net/state)                                           (esc_text field_transition)))
                  (text! field_state (pretty (deref net/state))))))
 
 (listen button_add_property :action
