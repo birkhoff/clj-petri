@@ -2,6 +2,8 @@
 (ns petri.simulator)
 
 (require '[petri.petri_net :as net])
+(require '[clojure.walk :only (prewalk-replace) :as walker])
+
 
 
                                ; checks if an Element is in a List
@@ -28,7 +30,15 @@
     false))
 
 
-(elements_in_list? '([:a :b 10] [:c :d 11] [:e :f 12]) '([:a :b 10] [:e :f 12] ))
+
+(defn state_vertex_hash [net v]
+  (net/get_vertex_hash ((keyword net) @net/state) v))
+
+(defn state_transition_hash [net v]
+  (net/get_transition_hash ((keyword net) @net/state) v))
+
+
+
 
 
                             ; returns all edges which are able to fire
@@ -141,16 +151,6 @@
                                         ; the vertices 
 
 
-(defn state_fire_transition2 [net t]
-  (let [edges (net/edges_to_transition_hash net t)
-        outs  (net/edges_from_transition_hash net t)
-        n     ((keyword net) (deref net/state))]
-    (if (state_transition_hash_fireable? net t)       
-      (swap! net/state assoc (keyword net)
-             (assoc n :vertices (fire_from_all_edges (fire_to_all_edges edges net) outs net))))))
-
-
-
 (defn state_fire_transition [net t]
   (let [n     ((keyword net) (deref net/state))
         edges (net/edges_to_transition_hash n t)
@@ -160,10 +160,7 @@
            (fire_from_all_edges (fire_to_all_edges edges net) outs net)))))
 
 
-@net/state
 
-(net/edges_to_transition_hash (:A_B @net/state) :-1349607119)
-(state_fire_transition "A_B" :-1349067119)
 
 
 
@@ -188,35 +185,83 @@
 
 
 
-(eval '(non_empty "Petri_A" "v-a"))
-
                                         ; Adding a Property to the
                                         ; specified net which can be
                                         ; evaluated whenever necessary
 
-                                        ; (net_alive "Net_A")
+                                        ; (net_alive) -> (net_alive "Net_A")
                                         ; (transition_alive "Net_A" "y" "z")
                                         ; (non_empty "Net_A" "a" "b")
 
 (defn delete_property [net]
+  "deletes all properties of a net in the current state"
   (let [n ((keyword net) (deref net/state))
         p (:properties n)]
     (swap! net/state assoc (keyword net) (assoc n :properties '()))))
 
-(defn add_property [net property]
+
+;delete this:
+(defn add_property_hash [net property]
+  "adds a property to a net in the current state"
   (let [n ((keyword net) (deref net/state))
         p (:properties n)]
-    (swap! net/state assoc (keyword net) (assoc n :properties (conj p property)))))
+    (swap! net/state assoc-in [(keyword net) :properties] (conj p property))))
 
-(add_property "Net_A" '(or (net_alive "Net_A") (net_alive "Net_B")))
-(add_property "Net_A" '(transition_alive "z"))
-(delete_property "Net_A")
-(deref net/state)
+
+(defn hash_name_map
+"returns a hashmap which converts names to their hash values"
+  [net]
+  (reduce merge  (map (fn [v] {(first (second v)) (first v)})
+                      (concat
+                       (:transitions ((keyword net) @net/state))
+                       (:vertices ((keyword net) @net/state))))))
+
+
+(defn hash_property
+  "converts name values to hash values"
+  [net p]
+  (walker/prewalk-replace (hash_name_map net) p))
+
+
+(defn add_property [net property]
+  "adds a property to a net in the current state"
+  (let [n ((keyword net) (deref net/state))
+        p (:properties n)]
+    (swap! net/state assoc-in [(keyword net) :properties]
+           (conj p (hash_property net property)))))
+
 
 (defn eval_property [net]
   (for [X (:properties ((keyword net) (deref net/state)))]
     (if (or (= (first X) 'or) (= (first X) 'and) (= (first X) 'not)) 
               [X  (eval X)]
-              [X  (apply (eval (first X)) (vec (conj (rest X) net))) ])))
+              [X  (apply (eval (first X)) (vec (conj (rest X) net)))])))
 
-(eval_property "Net_B")
+
+(defmacro eval_properties [net]
+  (for [p (:properties ((keyword net) @net/state))]
+     [p ]))
+
+
+
+(defn eval_properties [net]
+  (doall (for [p (:properties ((keyword net) @net/state))]
+           [p (eval `(-> ~net ~p))])))
+
+(->  "Net_A" (net_alive))
+
+
+
+(eval_properties "Net_A")
+
+
+(state_get_fireable_transitions "Net_A")
+
+;(class (eval_properties "Net_A"))
+
+(transition_alive "Net_A" :-1965068710)
+
+(net_alive "Net_A")
+
+
+@net/state

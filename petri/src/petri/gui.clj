@@ -8,6 +8,12 @@
 
 (require '[petri.petri_net :as net])
 (require '[petri.simulator :as sim])
+(require '[clojure.walk :only (prewalk-replace) :as walker])
+(use '[petri.simulator :only (net_alive)])
+(use '[petri.simulator :only (transition_alive)])
+(use '[petri.simulator :only (non_empty)])
+
+
 
 
 (def f (frame :title "Petri Netz Simulator 2014"))
@@ -20,6 +26,7 @@
 (def lbl (label ))
 (config! lbl :background :grey :foreground "#00f")
 (display lbl)
+
 
 
 
@@ -164,41 +171,62 @@
         (fn [e] (doall
                  (sim/state_fire_transition
                      (esc_text field_net)
-                     (net/get_transition_hash
-                      ((keyword (esc_text field_net)) @net/state)                                           (esc_text field_transition)))
+                     (sim/state_transition_hash
+                       (esc_text field_net) (esc_text field_transition)))
                  (text! field_state (pretty (deref net/state))))))
 
+
+;no optimal solution
+
+(defn name_spacer [code]
+  (clojure.string/replace code #"(net_alive|non_empty|transition_alive)"
+                          "petri.simulator/$1"))
+
 (listen button_add_property :action
-        (fn [e] (if (and
-                    (not= (esc_text field_net) "")
-                    (not= (text field_property) ""))
-                 (do
-                   (sim/add_property (esc_text field_net) (read-string (text field_property)))
-                   (text! field_state (pretty (deref net/state))) ))))
+  (fn [e]
+    (if (and  (not= (esc_text field_net) "")
+              (not= (text field_property) ""))
+      (doall
+        (sim/add_property (esc_text field_net)
+                          (read-string (name_spacer (text field_property))))
+        (text! field_state (pretty (deref net/state)))))))
 
 (defn pretty_2 [text]
-  (clojure.string/replace text "]" "]\n"))
+  (clojure.string/replace
+   (clojure.string/replace text "]" "]\n")
+   "petri.simulator/" ""))
 
-(read-string "'(+ 1 1)")
+(eval (read-string "`(net_alive)"))
 (deref net/state)
+
+(sim/add_property "Net_A" `(net_alive))
 
 ;this doesn't work somehow ...
 
+(defn foo [st]
+  "boooya")
+
+(defn set_eval_field [net]
+   (text! field_eval_property
+          (doall (pretty_2
+                  (apply str (sim/eval_properties net))))))
+
 (listen button_eval_property :action
-  (fn [e]
-    (println "foo")
-    (if (not= (esc_text field_net) "")
-      (text! field_eval_property  (pretty_2
-                                     (apply str (doall (sim/eval_property (esc_text field_net)))))) )))
+   (fn [e]
+      (if (not= (esc_text field_net) "")
+          (set_eval_field (esc_text field_net)))))
 
 
-(text! field_eval_property (doall (pretty_2
-                              (apply str (doall(sim/eval_property (esc_text field_net)))))))
+
+((fn [e]
+     (if (not= (esc_text field_net) "")
+        (set_eval (esc_text field_net)))) "s")
+
+(str "a")
+(set_eval "blub")
 
 
-;(text! field_eval_property (pretty_2 (apply str (eval_property (esc_text field_net)))))
-
-
+`(net_alive "Net_A")
 
 
 (def panel
@@ -345,7 +373,8 @@
         (text! field_state (pretty (deref net/state)))))))
 
 (defn dispose_rename [e]
-  (let [original    (net/get_vertex_hash (esc_text field_net) (esc_text field_vertex))
+  (let [original
+        (sim/state_vertex_hash  (esc_text field_net) (esc_text field_vertex))
         rename (esc_text field_rename)]
     (if  (not= original "")
       (do
@@ -354,7 +383,7 @@
         (text! field_state (pretty (deref net/state)))))))
 
 (defn dispose_rename_transition [e]
-  (let [original    (net/get_transition_hash
+  (let [original    (sim/state_transition_hash
                      (esc_text field_net)
                      (esc_text field_transition))
         rename (esc_text field_rename_transition)]
@@ -453,3 +482,10 @@
 
 
 
+
+(sim/eval_property "Net_A")
+
+(sim/hash_name_map "Net_A")
+
+(net_alive "A_B")
+@net/state

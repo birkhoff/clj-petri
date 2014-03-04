@@ -144,10 +144,10 @@
 (non_empty_vertices "Petri_A")
 
 
-(net/edges_to_transition_hash (:A_B @net/state) :-1349607119)
+(edges_to_transition_hash (:A_B @state) :-1349607119)
 (state_fire_transition "A_B"
                        (get_transition_hash
-                       ("A_B" @state)                                           "z"))
+                        ((keyword "A_B") @state)  "y"))
 
 
 
@@ -159,3 +159,16 @@
 (eval '(non_empty "Petri_A" :789101586))
 
 (eval_property "Petri_A")
+
+
+(state_vertex_hash "Net_B" "e")
+(state_transition_hash "Net_B" "x")
+
+
+
+@state
+
+(state_get_fireable_transitions "A_B")
+(edges_to_transition_hash (:A_B state) :-1349628046)
+(state_fire_transition "A_B" :-1349628046)
+(state_fire_transition "A_B" :-1349607119)
