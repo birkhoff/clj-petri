@@ -185,6 +185,8 @@
 
 
 
+
+
                                         ; Adding a Property to the
                                         ; specified net which can be
                                         ; evaluated whenever necessary
@@ -199,13 +201,6 @@
         p (:properties n)]
     (swap! net/state assoc (keyword net) (assoc n :properties '()))))
 
-
-;delete this:
-(defn add_property_hash [net property]
-  "adds a property to a net in the current state"
-  (let [n ((keyword net) (deref net/state))
-        p (:properties n)]
-    (swap! net/state assoc-in [(keyword net) :properties] (conj p property))))
 
 
 (defn hash_name_map
@@ -223,45 +218,91 @@
   (walker/prewalk-replace (hash_name_map net) p))
 
 
-(defn add_property [net property]
-  "adds a property to a net in the current state"
+(defn add_property
+"adds a property to a net in the current state"
+  [net property]
   (let [n ((keyword net) (deref net/state))
         p (:properties n)]
     (swap! net/state assoc-in [(keyword net) :properties]
            (conj p (hash_property net property)))))
 
+(nil? (re-find #"petri." "s"))
 
-(defn eval_property [net]
-  (for [X (:properties ((keyword net) (deref net/state)))]
-    (if (or (= (first X) 'or) (= (first X) 'and) (= (first X) 'not)) 
-              [X  (eval X)]
-              [X  (apply (eval (first X)) (vec (conj (rest X) net)))])))
+(defn is_property?
+  "checks wether p is property or not"
+  [p]
+  (do (if (and (not (nil? (re-find #"(or|not|and)" (str p))))
+               (nil? (re-find #"petri." (str p))))
+      false
+      true)))
 
 
-(defmacro eval_properties [net]
-  (for [p (:properties ((keyword net) @net/state))]
-     [p ]))
+(is_property? `(transition_alive :-1965068709))
+
+
+(defn eval_property
+  "evaluates a single property part and adds the
+   corresponding net as first parameter"
+  [net p]
+   (eval `(-> ~net ~p)))
+
+(eval_property "Net_A" `(transition_alive :-1965068709))
+
+
+
+(defn  prefixer
+"dsl to clojure"
+  ([a]
+     a)
+  ([op a]
+     `(~op ~a))
+  ([a op b]
+     `(~op ~a ~b))
+  ([a b c & expr]
+     (if (or (=  a `not) (= (str a) "not"))
+       `(~c (~a ~b) ~(apply prefixer expr))
+       `(~b ~a ~(apply prefixer (cons c expr))))))
+
+
+
+(apply prefixer '(not true or true))
+
+
+
+(defn eval_property_expr [net expr]
+  (doall (for [e expr]
+      (if (is_property? e)
+        (eval_property net e)
+         e))))
 
 
 
 (defn eval_properties [net]
   (doall (for [p (:properties ((keyword net) @net/state))]
-           [p (eval `(-> ~net ~p))])))
+           [p  (apply prefixer (eval_property_expr net p))])))
+
 
 (->  "Net_A" (net_alive))
 
 
 
+
+@net/state
+
 (eval_properties "Net_A")
+
+(add_property "Net_A" `((net_alive) or (net_alive)))
+(add_property "Net_A" `(not (transition_alive :-1965068709)))
+(add_property "Net_A" `(not (non_empty :-1965068709)))
 
 
 (state_get_fireable_transitions "Net_A")
 
-;(class (eval_properties "Net_A"))
+(transition_alive "Net_A" :-1965068709)
 
 (transition_alive "Net_A" :-1965068710)
 
-(net_alive "Net_A")
 
+(eval_properties "A_B_2")
 
 @net/state

@@ -218,15 +218,7 @@
 
 
 
-((fn [e]
-     (if (not= (esc_text field_net) "")
-        (set_eval (esc_text field_net)))) "s")
 
-(str "a")
-(set_eval "blub")
-
-
-`(net_alive "Net_A")
 
 
 (def panel
@@ -483,7 +475,7 @@
 
 
 
-(sim/eval_property "Net_A")
+;(sim/eval_property "Net_A")
 
 (sim/hash_name_map "Net_A")
 
