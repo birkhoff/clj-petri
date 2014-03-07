@@ -65,13 +65,16 @@
   (button :text "ADD TRANSITION" :bounds [8 320 150 30]))
 
 (def button_add_edges_in
-  (button :text "ADD EDGE FROM VERTEX TO TRANSITION" :bounds [8 400 300 30]))
+  (button :text "ADD EDGE FROM VERTEX TO TRANSITION" :bounds [8 420 300 30]))
 
 (def button_add_edges_out
-  (button :text "ADD EDGE FROM TRANSITION TO VERTEX" :bounds [8 450 300 30]))
+  (button :text "ADD EDGE FROM TRANSITION TO VERTEX" :bounds [8 470 300 30]))
 
 (def button_fire
   (button :text "FIRE" :bounds [200 320 50 30]))
+
+(def button_random_fire
+  (button :text "RANDOM FIRE" :bounds [10 360 100 40]))
 
 (def button_add_property
   (button :text "ADD PROPERTY" :bounds [8 600 150 30]))
@@ -176,6 +179,12 @@
                  (text! field_state (pretty (deref net/state))))))
 
 
+
+(listen button_random_fire :action
+        (fn [e] (doall
+                 (sim/state_fire_random_transition)
+                 (text! field_state (pretty (deref net/state))))))
+
 ;no optimal solution
 
 (defn name_spacer [code]
@@ -239,6 +248,7 @@
                      button_add_edges_in
                      button_add_edges_out
                      button_fire
+                     button_random_fire
 
                      field_property
                      button_add_property
@@ -321,6 +331,23 @@
                      (label :text "New name:" :bounds [30 10 150 20])
                      field_rename_transition]))
 
+(def button_n_steps
+  (button :text "FIRE" :bounds [60 65 80 30]))
+
+(def field_n_steps
+  (text :bounds [30 30 150 30]))
+
+(def n_steps_panel
+  (xyz-panel :items [button_n_steps
+                     field_n_steps
+                     (label :text "How many random steps?" :bounds [30 10 250 20])]))
+
+
+
+(def n_steps_f
+  (frame :size [230 :by 120]
+         :content n_steps_panel))
+
 (def copy_f
   (frame :size [400 :by 120]
          :content copypanel ))
@@ -386,11 +413,20 @@
         (text! field_state (pretty (deref net/state)))))))
 
 
+(defn dispose_n_steps [e]
+  (if (integer? (read-string (text field_n_steps)))
+    (doall  
+     (dispose! n_steps_f)
+     (sim/state_fire_random_transitions (read-string (text field_n_steps)))
+     (text! field_state (pretty (deref net/state))))))
+
+(integer? (read-string "3"))
 
 (listen button_copy :action dispose_copy)
 (listen button_merge :action dispose_merge)
 (listen button_rename :action dispose_rename)
 (listen button_rename_t :action dispose_rename_transition)
+(listen button_n_steps :action dispose_n_steps)
 
 
 
@@ -420,6 +456,11 @@
 
 (reset! net/state (read-string (slurp "/Users/Mike/Desktop/state2.txt")))
 
+
+(defn a-n-steps [e]
+  (do
+    (-> n_steps_f show!)
+    (request-focus! field_n_steps)))
 
 (defn a-copy  [e]
   (do
@@ -459,10 +500,12 @@
        a-rename-t (action :handler a-rename-t :name "Rename Transition" :tip "Renames transition specified in the Transition label")
        a-delete-properties (action :handler a-delete-properties :name "Delete Properties"
                                    :tip "Deletes all properties of the current specified net")
-       a-save-as (action :handler a-save-as :name "Save As" :tip "Save the current file")]
+       a-save-as (action :handler a-save-as :name "Save As" :tip "Save the current file")
+       a-n-steps (action :handler a-n-steps :name "Random Steps" :tip "Executes a number of random steps")
+       ]
    (menubar
     :items [(menu :text "File" :items [a-open a-save-as])
-            (menu :text "Edit" :items [a-copy a-merge a-rename a-rename-t a-delete-properties a-delete])])))
+            (menu :text "Edit" :items [a-n-steps a-copy a-merge a-rename a-rename-t a-delete-properties a-delete])])))
 
 
 

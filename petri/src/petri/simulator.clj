@@ -306,3 +306,41 @@
 (eval_properties "A_B_2")
 
 @net/state
+
+
+
+
+
+(def state_get_all_fireable_transitions
+  (reduce concat
+      (map (fn [n] (map #(vector n %) (state_get_fireable_transitions n)))
+           (map #(:name (second %)) @net/state))))
+
+
+(defn state_fire_random_transition
+"fires a random transition of the nets in the state map"
+[]
+(let [t state_get_all_fireable_transitions ]
+  (if (not (empty? t))
+    (apply state_fire_transition (rand-nth t)))))
+
+
+
+ (state_fire_random_transition)
+
+
+(state_get_fireable_transitions "Net_A")
+
+
+(defn state_fire_random_transitions
+  "fires a given number of random transitions"
+ [n]
+ (doall (repeatedly n state_fire_random_transition)))
+
+(state_fire_random_transitions 5)
+
+@net/state
+
+
+
+
