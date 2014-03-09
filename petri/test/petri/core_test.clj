@@ -141,3 +141,28 @@
         (is (= 4 (count (:edges_out (:A_B_2 @state))))) )
 
 
+
+(deftest testing_copying
+  (testing "Testing copy function"
+    (do
+        (add_petri (petri "Petri_A"))
+        (state_add_vertex "Petri_A" "v-b" 6)
+        (state_add_vertex "Petri_A" "v-a" 9)
+        (state_add_transition "Petri_A" "z")
+        (state_add_transition "Petri_A" "y")
+        (state_add_edges_in "Petri_A" "v-a" "z" 8)
+        (state_add_edges_in "Petri_A" "v-a" "y" 7)
+        (state_add_edges_in "Petri_A" "v-b" "y" 6)
+        (state_add_edges_in "Petri_A" "v-b" "z" 1)
+        (state_add_edges_out "Petri_A"  "v-a" "y" 8)
+        (state_add_edges_out "Petri_A" "v-a" "z" 5)
+        (state_add_edges_out "Petri_A" "v-b" "y" 9)
+
+        (let [v     (:vertices (copy_petri "cp" "Petri_A"))
+              t     (:transitions (copy_petri "cp" "Petri_A"))
+              e_in  (:edges_in (copy_petri "cp" "Petri_A"))
+              e_out (:edges_out (copy_petri "cp" "Petri_A"))]
+          (is (= 2 (count v)))
+          (is (= 2 (count t)))
+          (is (= 4 (count e_in)))
+          (is (= 3 (count e_out)))))))
