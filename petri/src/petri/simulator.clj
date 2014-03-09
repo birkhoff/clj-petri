@@ -1,7 +1,7 @@
 
 (ns petri.simulator)
 
-(require '[petri.petri_net :as net])
+(require '[petri.petri_net_state :as net])
 (require '[clojure.walk :only (prewalk-replace) :as walker])
 
 
@@ -308,28 +308,30 @@
 @net/state
 
 
+(reduce concat '(() (:s)))
 
 
-
-(def state_get_all_fireable_transitions
+(defn state_get_all_fireable_transitions
+"get all fireable transitions from the current state"
+  []
   (reduce concat
       (map (fn [n] (map #(vector n %) (state_get_fireable_transitions n)))
-           (map #(:name (second %)) @net/state))))
+               (map #(:name (second %)) @net/state))))
 
 
 (defn state_fire_random_transition
 "fires a random transition of the nets in the state map"
 []
-(let [t state_get_all_fireable_transitions ]
+(let [t (state_get_all_fireable_transitions) ]
   (if (not (empty? t))
     (apply state_fire_transition (rand-nth t)))))
 
 
 
- (state_fire_random_transition)
+(state_fire_random_transition)
 
 
-(state_get_fireable_transitions "Net_A")
+;(state_get_fireable_transitions "Net_A")
 
 
 (defn state_fire_random_transitions
@@ -337,7 +339,7 @@
  [n]
  (doall (repeatedly n state_fire_random_transition)))
 
-(state_fire_random_transitions 5)
+;(state_fire_random_transitions 5)
 
 @net/state
 

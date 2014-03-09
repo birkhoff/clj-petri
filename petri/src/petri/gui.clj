@@ -6,7 +6,7 @@
            java.awt.Font))
 
 
-(require '[petri.petri_net :as net])
+(require '[petri.petri_net_state :as net])
 (require '[petri.simulator :as sim])
 (require '[clojure.walk :only (prewalk-replace) :as walker])
 (use '[petri.simulator :only (net_alive)])
