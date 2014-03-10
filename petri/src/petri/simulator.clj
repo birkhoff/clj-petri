@@ -362,6 +362,22 @@
 
 true
 
+; open and save functions
+
+(defn save_file
+"saves the current state to a file specified as string"
+  [file]
+  (if (not (nil? file)) 
+    (spit file (str (deref net_state/state)))))
+
+
+(defn open_file
+"opens a file specified as string"
+  [file]
+  (if (not (nil? file))
+      (reset! net_state/state  (read-string (slurp file)))))
+
+
 
 
 

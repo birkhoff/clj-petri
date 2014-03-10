@@ -373,3 +373,10 @@
 
 
 
+(deftest testing_open_file
+  (testing "Tests if a file is loaded correctly"
+    (do
+     (open_file "test/petri/state2.txt")
+     (is (and
+          (contains? @state :Net_A)
+          (contains? @state :Net_B))))))
