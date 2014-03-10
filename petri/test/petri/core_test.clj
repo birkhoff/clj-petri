@@ -1,13 +1,16 @@
 (ns petri.core-test
   (:require [clojure.test :refer :all]
-            [petri.petri_net_state :refer :all])
+            [petri.petri_net_state :refer :all]
+            [petri.simulator :refer :all])
   (:use clojure.test)
-  (:use petri.petri_net_state))
+  (:use petri.petri_net_state)
+  (:use petri.simulator))
 
 
 
 ;(use '[clojure.walk :only (prewalk-replace)])
 (use '[petri.petri_net_state])
+(use '[petri.simulator])
 ;(use '[petri.simulator])
 
 
@@ -166,3 +169,207 @@
           (is (= 2 (count t)))
           (is (= 4 (count e_in)))
           (is (= 3 (count e_out)))))))
+
+
+
+
+(deftest testing_merge_properties
+  (testing "Testing merging of properties:
+ Two vertices and transitions are merged together and should be merged together in the properties as well resulting in only 3 different properties instead of 6 different"
+    (let [k
+          (unite_properties "A_B"
+              #{'((net_alive)) '((transition_alive :-1965068709))
+                 '((non_empty :-1965068733))}
+
+              #{'((net_alive)) '((transition_alive :-1965068678))
+                '((non_empty :-1965068699))}
+
+                                        ; vertices va and vb:
+                            {:-1965068733 ["b" 5], :-1965068734 ["a" 12]}
+                            {:-1965068699 ["e" 6], :-1965068700 ["d" 1]}
+                                        ; transitions ta and tb:
+
+                            {:-1965068710 ["y"], :-1965068709 ["z"]}
+                            {:-1965068681 ["w"], :-1965068678 ["x"]}
+                                        ; merged v and t
+
+                            {:-1965068733 :-1965068699}
+                            {:-1965068709 :-1965068678}
+                            "Net_A" "Net_B"  )]
+      (is (= 3 (count k)) ))))
+
+
+;; simulator tests
+
+(deftest testing_elements_in_list?
+  (testing "Own function to check if all elements of a list are also present in the first one"
+    (is
+     (elements_in_list?
+      '([:a :b 10] [:c :d 11] [:e :f 12]) '([:a :b 10] [:e :f 12] )))
+    (is (not
+         (elements_in_list?
+          '([:a :b 10] [:c :d 11] [:e :f 12]) '([:a :b 10] [:e :f 10] ))))))
+
+
+(deftest testing_least_one_element_in_list?
+  (testing "Own function to check if at least one element of the latter list is also in the first one"
+    (is (least_one_elements_in_list? '([:a :b]) '([:a :b] [:s])))
+    (is (least_one_elements_in_list? '([:a :b] [:s]) '([:a :b] [:s])))
+    (is (least_one_elements_in_list? '([:a] [:s] [:b] ) '([:a :b] [:s])))
+    (is (not (least_one_elements_in_list? '([:a :c]) '([:a :b] [:s]))))))
+
+
+
+(deftest testing_fireable_edges
+  (testing "list of fireable edges of a net of the state"
+    (do
+      (add_petri (petri "Petri_A"))
+      (state_add_vertex "Petri_A" "v-b" 6)
+      (state_add_vertex "Petri_A" "v-a" 9)
+      (state_add_transition "Petri_A" "z")
+      (state_add_transition "Petri_A" "y")
+      (state_add_edges_in "Petri_A" "v-a" "z" 8)
+      (state_add_edges_in "Petri_A" "v-a" "y" 7)
+      (state_add_edges_in "Petri_A" "v-b" "y" 6)
+      (state_add_edges_in "Petri_A" "v-b" "z" 100)
+      (state_add_edges_out "Petri_A"  "v-a" "y" 8)
+      (state_add_edges_out "Petri_A" "v-a" "z" 5)
+      (state_add_edges_out "Petri_A" "v-b" "y" 9)
+
+      (is (= 3 (count (net_fireable_edges "Petri_A"))))
+
+      (state_add_vertex "Petri_A" "v-b" 100)
+      (is (= 4 (count (net_fireable_edges "Petri_A")))))))
+
+
+(deftest testing_not_fireable_edges
+  (testing "list of fireable edges of a net of the state"
+    (do
+      (add_petri (petri "Petri_A"))
+      (state_add_vertex "Petri_A" "v-b" 6)
+      (state_add_vertex "Petri_A" "v-a" 9)
+      (state_add_transition "Petri_A" "z")
+      (state_add_transition "Petri_A" "y")
+      (state_add_edges_in "Petri_A" "v-a" "z" 8)
+      (state_add_edges_in "Petri_A" "v-a" "y" 7)
+      (state_add_edges_in "Petri_A" "v-b" "y" 6)
+      (state_add_edges_in "Petri_A" "v-b" "z" 100)
+      (state_add_edges_out "Petri_A"  "v-a" "y" 8)
+      (state_add_edges_out "Petri_A" "v-a" "z" 5)
+      (state_add_edges_out "Petri_A" "v-b" "y" 9)
+
+      (is (= 1 (count (net_not_fireable_edges "Petri_A"))))
+
+      (state_add_vertex "Petri_A" "v-b" 100)
+      (is (= 0 (count (net_not_fireable_edges "Petri_A")))))))
+
+
+(deftest testing_fireable_transitions
+  (testing "list of fireable transitions of a net of the state"
+    (do
+      (add_petri (petri "Petri_A"))
+      (state_add_vertex "Petri_A" "v-b" 6)
+      (state_add_vertex "Petri_A" "v-a" 9)
+      (state_add_transition "Petri_A" "z")
+      (state_add_transition "Petri_A" "y")
+      (state_add_edges_in "Petri_A" "v-a" "z" 8)
+      (state_add_edges_in "Petri_A" "v-a" "y" 7)
+      (state_add_edges_in "Petri_A" "v-b" "y" 6)
+      (state_add_edges_in "Petri_A" "v-b" "z" 100)
+      (state_add_edges_out "Petri_A"  "v-a" "y" 8)
+      (state_add_edges_out "Petri_A" "v-a" "z" 5)
+      (state_add_edges_out "Petri_A" "v-b" "y" 9)
+
+      (is (contains?
+           (state_get_fireable_transitions "Petri_A")
+           (get_transition_hash ((keyword "Petri_A") @state) "y")))
+
+      (state_add_vertex "Petri_A" "v-b" 100)
+      (is (and
+           (contains?
+             (state_get_fireable_transitions "Petri_A")
+             (state_transition_hash "Petri_A" "z"))
+           (contains?
+             (state_get_fireable_transitions "Petri_A")
+             (state_transition_hash "Petri_A" "y") ))))))
+
+
+
+(deftest testing_adding_properties
+  (testing "testing addition of properties"
+    (do
+      (add_petri (petri "Petri_A"))
+      (add_property "Petri_A" '((net_alive)))
+      (is (= #{'((net_alive))}
+             (:properties (:Petri_A @state))))
+
+      (add_property "Petri_A" '((net_alive) or (transition_alive "z")))
+      (is (= #{'((net_alive)) '((net_alive) or (transition_alive "z"))}
+             (:properties (:Petri_A @state)))))))
+
+
+(deftest testing_edges_to_transition_hash
+  (testing "testing function which returns all edges to a transition"
+      (do
+        (add_petri (petri "Petri_A"))
+        (state_add_vertex "Petri_A" "v-b" 6)
+        (state_add_vertex "Petri_A" "v-a" 9)
+        (state_add_transition "Petri_A" "z")
+        (state_add_transition "Petri_A" "y")
+        (state_add_edges_in "Petri_A" "v-a" "z" 8)
+        (state_add_edges_in "Petri_A" "v-a" "y" 7)
+        (state_add_edges_in "Petri_A" "v-b" "y" 6)
+        (state_add_edges_in "Petri_A" "v-b" "z" 100)
+        (state_add_edges_out "Petri_A"  "v-a" "y" 8)
+        (state_add_edges_out "Petri_A" "v-a" "z" 5)
+        (state_add_edges_out "Petri_A" "v-b" "y" 9)
+
+        (is (= #{6 7}
+           (set (map last
+              (edges_to_transition_hash (:Petri_A @state)
+                         (state_transition_hash "Petri_A" "y"))))))
+        (is (= #{8 100}
+           (set (map last
+              (edges_to_transition_hash (:Petri_A @state)
+                      (state_transition_hash "Petri_A" "z")))))))))
+
+
+
+(deftest testing_simple_fireing
+  (testing "Testing functionality of fireing a transition"
+    (do
+        (add_petri (petri "Petri_A"))
+        (state_add_vertex "Petri_A" "v-b" 6)
+        (state_add_vertex "Petri_A" "v-a" 9)
+        (state_add_transition "Petri_A" "z")
+        (state_add_transition "Petri_A" "y")
+        (state_add_edges_in "Petri_A" "v-a" "z" 8)
+        (state_add_edges_in "Petri_A" "v-a" "y" 7)
+        (state_add_edges_in "Petri_A" "v-b" "y" 6)
+        (state_add_edges_in "Petri_A" "v-b" "z" 100)
+        (state_add_edges_out "Petri_A"  "v-a" "y" 8)
+        (state_add_edges_out "Petri_A" "v-a" "z" 5)
+        (state_add_edges_out "Petri_A" "v-b" "y" 9)
+
+        (state_fire_transition "Petri_A"
+                               (state_transition_hash "Petri_A" "y"))
+        
+        (is (= #{["v-a" 10] ["v-b" 9]}
+               (set (map second (:vertices (:Petri_A @state))))))
+
+        (state_fire_transition "Petri_A"
+                               (state_transition_hash "Petri_A" "z"))
+
+        (is (= #{["v-a" 10] ["v-b" 9]}
+               (set (map second (:vertices (:Petri_A @state))))))
+
+        (state_add_vertex "Petri_A" "v-b" 100)
+
+        (state_fire_transition "Petri_A"
+                               (state_transition_hash "Petri_A" "z"))
+
+        (is (= #{["v-a" 7] ["v-b" 0]}
+               (set (map second (:vertices (:Petri_A @state))))))) ))
+
+
+

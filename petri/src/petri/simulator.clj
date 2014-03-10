@@ -1,7 +1,7 @@
+(ns petri.simulator
+  (:require [petri.petri_net_state :as net_state]))
 
-(ns petri.simulator)
-
-(require '[petri.petri_net_state :as net])
+(require '[petri.petri_net_state :as net_state])
 (require '[clojure.walk :only (prewalk-replace) :as walker])
 
 
@@ -32,10 +32,10 @@
 
 
 (defn state_vertex_hash [net v]
-  (net/get_vertex_hash ((keyword net) @net/state) v))
+  (net_state/get_vertex_hash ((keyword net) @net_state/state) v))
 
 (defn state_transition_hash [net v]
-  (net/get_transition_hash ((keyword net) @net/state) v))
+  (net_state/get_transition_hash ((keyword net) @net_state/state) v))
 
 
 
@@ -44,12 +44,12 @@
                             ; returns all edges which are able to fire
 
 (defn net_fireable_edges [net]
-  (let [n ((keyword net) (deref net/state))
+  (let [n ((keyword net)  @net_state/state)
         v (:vertices n)
         e (:edges_in n)]
     (into #{} (filter identity
          (for [x e]
-             (if (>= (second ((second x) v)) (get x 2)) x )))) ) )
+             (if (>= (second ((second x) v)) (get x 2)) x ))))))
 
 
 
@@ -57,7 +57,7 @@
                                         ; able to fire 
 
 (defn net_not_fireable_edges [net]
-  (reduce disj  (:edges_in ((keyword net) (deref net/state)))
+  (reduce disj  (:edges_in ((keyword net) (deref net_state/state)))
            (net_fireable_edges net) ))
 
 
@@ -85,8 +85,8 @@
 
 (defn state_transition_fireable? [net t]
   (contains? (into  #{}
-           (for [X (net/get_all_transition_hashes net t)]
-             (first (X (:transitions ((keyword net) @net/state)))))) t))
+           (for [X (net_state/get_all_transition_hashes net t)]
+             (first (X (:transitions ((keyword net) @net_state/state)))))) t))
 
                                         ; sees if a transition hash is firable
 
@@ -109,7 +109,7 @@
 "substract tokens of the connected vertex"
   [net e]
   (let [cost  (last e)
-        n     ((keyword net) (deref net/state))
+        n     ((keyword net) (deref net_state/state))
         vertices (:vertices n)
         vhash (second e)
         v1    (vhash (:vertices n))]
@@ -121,7 +121,7 @@
                                ;including the fired vertices
 
 (defn fire_to_all_edges [edges net]
-  (let [n ((keyword net) (deref net/state))
+  (let [n ((keyword net) (deref net_state/state))
         vertices (:vertices n)]
     (conj vertices (reduce merge (for [X edges]
                               (fire_to_edge net X))))))
@@ -152,11 +152,11 @@
 
 
 (defn state_fire_transition [net t]
-  (let [n     ((keyword net) (deref net/state))
-        edges (net/edges_to_transition_hash n t)
-        outs  (net/edges_from_transition_hash n t)]
+  (let [n     ((keyword net) (deref net_state/state))
+        edges (net_state/edges_to_transition_hash n t)
+        outs  (net_state/edges_from_transition_hash n t)]
     (if (state_transition_hash_fireable? net t)       
-      (swap! net/state assoc-in [(keyword net) :vertices]
+      (swap! net_state/state assoc-in [(keyword net) :vertices]
            (fire_from_all_edges (fire_to_all_edges edges net) outs net)))))
 
 
@@ -175,7 +175,7 @@
 
 (defn non_empty_vertices [net]
   (into #{} (filter identity
-     (for [X (:vertices ((keyword net) (deref net/state)))]
+     (for [X (:vertices ((keyword net) (deref net_state/state)))]
         (if (< 0 (second (second X)))
          X)))))
 
@@ -197,9 +197,9 @@
 
 (defn delete_property [net]
   "deletes all properties of a net in the current state"
-  (let [n ((keyword net) (deref net/state))
+  (let [n ((keyword net) (deref net_state/state))
         p (:properties n)]
-    (swap! net/state assoc (keyword net) (assoc n :properties '()))))
+    (swap! net_state/state assoc (keyword net) (assoc n :properties '()))))
 
 
 
@@ -208,8 +208,8 @@
   [net]
   (reduce merge  (map (fn [v] {(first (second v)) (first v)})
                       (concat
-                       (:transitions ((keyword net) @net/state))
-                       (:vertices ((keyword net) @net/state))))))
+                       (:transitions ((keyword net) @net_state/state))
+                       (:vertices ((keyword net) @net_state/state))))))
 
 
 (defn hash_property
@@ -218,17 +218,27 @@
   (walker/prewalk-replace (hash_name_map net) p))
 
 
+(defn- property?
+"checks if a property is correctly written with a simple short reg ex"
+  [p]
+  (re-matches #"\((clojure.core/)?(not)?\ *\((petri.simulator/)?(net_alive|(transition_alive .+)|(non_empty .+))\)( (clojure.core/)?(and|or)\ *(clojure.core/)?(not)? \((petri.simulator/)?(net_alive|(transition_alive .+)|(non_empty .+))\))*\)"
+              (str p)))
+
+(property? `(not (net_alive)))
+
+
+
 (defn add_property
 "adds a property to a net in the current state"
   [net property]
-  (let [n ((keyword net) (deref net/state))
-        p (:properties n)]
-    (swap! net/state assoc-in [(keyword net) :properties]
-           (conj p (hash_property net property)))))
+  (if (property? property)
+   (let [n ((keyword net) (deref net_state/state))
+          p (:properties n)]
+      (swap! net_state/state assoc-in [(keyword net) :properties]
+             (conj p (hash_property net property))))))
 
-(nil? (re-find #"petri." "s"))
 
-(defn is_property?
+(defn- is_property?
   "checks wether p is property or not"
   [p]
   (do (if (and (not (nil? (re-find #"(or|not|and)" (str p))))
@@ -240,6 +250,10 @@
 (is_property? `(transition_alive :-1965068709))
 
 
+
+
+(apply + [1 2 3])
+
 (defn eval_property
   "evaluates a single property part and adds the
    corresponding net as first parameter"
@@ -250,7 +264,7 @@
 
 
 
-(defn  prefixer
+(defn-  prefixer
 "dsl to clojure"
   ([a]
      a)
@@ -269,6 +283,9 @@
 
 
 
+(re-matches #"(a|b) a"
+         "b a")
+
 (defn eval_property_expr [net expr]
   (doall (for [e expr]
       (if (is_property? e)
@@ -278,8 +295,8 @@
 
 
 (defn eval_properties [net]
-  (doall (for [p (:properties ((keyword net) @net/state))]
-           [p  (apply prefixer (eval_property_expr net p))])))
+  (doall (for [p (:properties ((keyword net) @net_state/state))]
+           [p  (eval (apply prefixer (eval_property_expr net p)))])))
 
 
 (->  "Net_A" (net_alive))
@@ -287,8 +304,10 @@
 
 
 
-@net/state
+@net_state/state
 
+
+(net_state/add_petri (net_state/petri "Net_A"))
 (eval_properties "Net_A")
 
 (add_property "Net_A" `((net_alive) or (net_alive)))
@@ -303,9 +322,9 @@
 (transition_alive "Net_A" :-1965068710)
 
 
-(eval_properties "A_B_2")
+(eval_properties "Net_A")
 
-@net/state
+@net_state/state
 
 
 (reduce concat '(() (:s)))
@@ -316,7 +335,7 @@
   []
   (reduce concat
       (map (fn [n] (map #(vector n %) (state_get_fireable_transitions n)))
-               (map #(:name (second %)) @net/state))))
+           (filter identity (map #(:name (second %)) @net_state/state)))))
 
 
 (defn state_fire_random_transition
@@ -339,9 +358,11 @@
  [n]
  (doall (repeatedly n state_fire_random_transition)))
 
-;(state_fire_random_transitions 5)
+(state_fire_random_transitions 5)
 
-@net/state
+true
+
+
 
 
 
