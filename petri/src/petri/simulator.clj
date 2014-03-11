@@ -191,9 +191,6 @@
                                         ; specified net which can be
                                         ; evaluated whenever necessary
 
-                                        ; (net_alive) -> (net_alive "Net_A")
-                                        ; (transition_alive "Net_A" "y" "z")
-                                        ; (non_empty "Net_A" "a" "b")
 
 (defn delete_property [net]
   "deletes all properties of a net in the current state"
@@ -218,101 +215,73 @@
   (walker/prewalk-replace (hash_name_map net) p))
 
 
-(defn- property?
-"checks if a property is correctly written with a simple short reg ex"
-  [p]
-  (re-matches #"\((clojure.core/)?(not)?\ *\((petri.simulator/)?(net_alive|(transition_alive .+)|(non_empty .+))\)( (clojure.core/)?(and|or)\ *(clojure.core/)?(not)? \((petri.simulator/)?(net_alive|(transition_alive .+)|(non_empty .+))\))*\)"
-              (str p)))
 
-(property? `(not (net_alive)))
+(defn- propper_property?
+"checks if a property won't cause a crash"
+  [p]
+  (or (and (contains? #{:net_alive :non_empty
+                        :transition_alive} (:type p))
+           (or (nil? (:args p))
+               (seq? (:args p))))
+
+      (and (contains? #{:or :not} (:type p))
+           (every? identity (map propper_property? (:args p))))))
+
+
+
+(defn property
+  "creates a property map"
+  [type & args]
+  {:type type :args args})
 
 
 
 (defn add_property
-"adds a property to a net in the current state"
+  "adds a property to a net in the current state
+   - also checks if a supported :type and :args are given"
   [net property]
-  (if (property? property)
-   (let [n ((keyword net) (deref net_state/state))
+  (if (propper_property? property)
+    (let [n ((keyword net) (deref net_state/state))
           p (:properties n)]
       (swap! net_state/state assoc-in [(keyword net) :properties]
              (conj p (hash_property net property))))))
 
+(hash_property "Net_A" '("b"))
 
-(defn- is_property?
-  "checks wether p is property or not"
-  [p]
-  (do (if (and (not (nil? (re-find #"(or|not|and)" (str p))))
-               (nil? (re-find #"petri." (str p))))
-      false
-      true)))
-
-
-(is_property? `(transition_alive :-1965068709))
-
-
-
-
-(apply + [1 2 3])
-
-(defn eval_property
-  "evaluates a single property part and adds the
-   corresponding net as first parameter"
-  [net p]
-   (eval `(-> ~net ~p)))
-
-(eval_property "Net_A" `(transition_alive :-1965068709))
-
-
-
-(defn-  prefixer
-"dsl to clojure"
-  ([a]
-     a)
-  ([op a]
-     `(~op ~a))
-  ([a op b]
-     `(~op ~a ~b))
-  ([a b c & expr]
-     (if (or (=  a `not) (= (str a) "not"))
-       `(~c (~a ~b) ~(apply prefixer expr))
-       `(~b ~a ~(apply prefixer (cons c expr))))))
-
-
-
-(apply prefixer '(not true or true))
-
-
-
-(re-matches #"(a|b) a"
-         "b a")
-
-(defn eval_property_expr [net expr]
-  (doall (for [e expr]
-      (if (is_property? e)
-        (eval_property net e)
-         e))))
-
-
-
-(defn eval_properties [net]
-  (doall (for [p (:properties ((keyword net) @net_state/state))]
-           [p  (eval (apply prefixer (eval_property_expr net p)))])))
-
-
-(->  "Net_A" (net_alive))
-
-
-
+(add_property "Net_A" (property :not (property :transition_alive "y")))
+(delete_property "Net_A") 
 
 @net_state/state
 
 
-(net_state/add_petri (net_state/petri "Net_A"))
-(eval_properties "Net_A")
+(defmulti eval_property
+  "Multi Method dispatching after type"
+  (fn [x _] (:type x)))
 
-(add_property "Net_A" `((net_alive) or (net_alive)))
-(add_property "Net_A" `(not (transition_alive :-1965068709)))
-(add_property "Net_A" `(not (non_empty :-1965068709)))
+(defmethod eval_property :net_alive [prop net]
+  (net_alive net))
+
+(defmethod eval_property :transition_alive [prop net]
+  (apply transition_alive (cons net (:args prop))))
+
+(defmethod eval_property :non_empty [prop net]
+  (apply non_empty (cons net (:args prop))))
+
+(defmethod eval_property :or [prop net]
+  (true? (some identity (map #(eval_property % net) (:args prop)))))
+
+(defmethod eval_property :not [prop net]
+  (every? identity (map #(not (eval_property % net)) (:args prop))))
+
+
+
+
+(defn eval_properties
+  "Evaluates the properties of a net from the state"
+  [net]
+  (map (fn [p] [p  (eval_property p net)])
+       (:properties  ((keyword net) @net_state/state))))
+
 
 
 (state_get_fireable_transitions "Net_A")
@@ -322,12 +291,9 @@
 (transition_alive "Net_A" :-1965068710)
 
 
-(eval_properties "Net_A")
-
 @net_state/state
 
 
-(reduce concat '(() (:s)))
 
 
 (defn state_get_all_fireable_transitions
@@ -347,10 +313,10 @@
 
 
 
-(state_fire_random_transition)
+;(state_fire_random_transition)
 
 
-;(state_get_fireable_transitions "Net_A")
+
 
 
 (defn state_fire_random_transitions
@@ -358,9 +324,7 @@
  [n]
  (doall (repeatedly n state_fire_random_transition)))
 
-(state_fire_random_transitions 5)
-
-true
+;(state_fire_random_transitions 5)
 
 ; open and save functions
 
@@ -376,8 +340,6 @@ true
   [file]
   (if (not (nil? file))
       (reset! net_state/state  (read-string (slurp file)))))
-
-
 
 
 

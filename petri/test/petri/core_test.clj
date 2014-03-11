@@ -295,18 +295,6 @@
 
 
 
-(deftest testing_adding_properties
-  (testing "testing addition of properties"
-    (do
-      (add_petri (petri "Petri_A"))
-      (add_property "Petri_A" '((net_alive)))
-      (is (= #{'((net_alive))}
-             (:properties (:Petri_A @state))))
-
-      (add_property "Petri_A" '((net_alive) or (transition_alive "z")))
-      (is (= #{'((net_alive)) '((net_alive) or (transition_alive "z"))}
-             (:properties (:Petri_A @state)))))))
-
 
 (deftest testing_edges_to_transition_hash
   (testing "testing function which returns all edges to a transition"
@@ -380,3 +368,29 @@
      (is (and
           (contains? @state :Net_A)
           (contains? @state :Net_B))))))
+
+
+(deftest testing_simple_eval_properties
+  (testing "Simple tests for properties"
+    (do
+
+      (open_file "test/petri/state2.txt")
+
+      (add_property
+       "Net_A"
+       (property :not (property :not (property :transition_alive "y"))))
+
+      (add_property "Net_A"
+                    (property :transition_alive "y"))
+
+       (add_property "Net_A"
+                     (property :net_alive))
+
+       (add_property "Net_A"
+                     (property :or
+                               (property :non_empty "a")
+                               (property :non_empty "b")))
+       
+       (let [res (map second (eval_properties "Net_A"))]
+         (do (is  (= #{true} (set res)))
+             (is (= 4 (count res))))))))

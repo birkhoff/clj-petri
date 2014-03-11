@@ -185,11 +185,7 @@
                  (sim/state_fire_random_transition)
                  (text! field_state (pretty (deref net/state))))))
 
-;no optimal solution
 
-(defn name_spacer [code]
-  (clojure.string/replace code #"(net_alive|non_empty|transition_alive)"
-                          "petri.simulator/$1"))
 
 (listen button_add_property :action
   (fn [e]
@@ -197,28 +193,18 @@
               (not= (text field_property) ""))
       (doall
         (sim/add_property (esc_text field_net)
-                          (read-string (name_spacer (text field_property))))
+                          (read-string  (text field_property)))
         (text! field_state (pretty (deref net/state)))))))
 
-(defn pretty_2 [text]
-  (clojure.string/replace
-   (clojure.string/replace text "]" "]\n")
-   "petri.simulator/" ""))
 
-(eval (read-string "`(net_alive)"))
-(deref net/state)
-
-(sim/add_property "Net_A" `(net_alive))
-
-;this doesn't work somehow ...
-
-(defn foo [st]
-  "boooya")
+(defn- pretty_prop
+ "Pretty Printer for the results of properties"
+  [text]
+   (clojure.string/replace text "]" "]\n"))
 
 (defn set_eval_field [net]
    (text! field_eval_property
-          (doall (pretty_2
-                  (apply str (sim/eval_properties net))))))
+          (doall (pretty_prop (apply str (sim/eval_properties net))))))
 
 (listen button_eval_property :action
    (fn [e]
