@@ -8,6 +8,7 @@
 
 (require '[petri.petri_net_state :as net])
 (require '[petri.simulator :as sim])
+(require '[petri.game :as game])
 (require '[clojure.walk :only (prewalk-replace) :as walker])
 (use '[petri.simulator :only (net_alive)])
 (use '[petri.simulator :only (transition_alive)])
@@ -470,7 +471,10 @@
 (defn a-delete-properties [e]
   (do
     (sim/delete_property (esc_text field_net))
-     (text! field_state (pretty (deref net/state)))))
+    (text! field_state (pretty (deref net/state)))))
+
+(defn a-shooter [e]
+  (game/game))
 
 (def menus
  (let [a-open (action :handler a-open :name "Open" :tip "Open a file")
@@ -484,10 +488,11 @@
                                    :tip "Deletes all properties of the current specified net")
        a-save-as (action :handler a-save-as :name "Save As" :tip "Save the current file")
        a-n-steps (action :handler a-n-steps :name "Random Steps" :tip "Executes a number of random steps")
-       ]
+       a-shooter (action :handler a-shooter :name "Visual Shooter" :tip "Special visualization of the PetriNets")]
    (menubar
     :items [(menu :text "File" :items [a-open a-save-as])
-            (menu :text "Edit" :items [a-n-steps a-copy a-merge a-rename a-rename-t a-delete-properties a-delete])])))
+            (menu :text "Edit" :items [a-n-steps a-copy a-merge a-rename a-rename-t a-delete-properties a-delete])
+            (menu :text "Visualization" :items [a-shooter])])))
 
 
 
