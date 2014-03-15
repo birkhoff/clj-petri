@@ -504,12 +504,12 @@
 
 
 
-
 ;(sim/eval_property "Net_A")
 
-(sim/hash_name_map "Net_A")
+;(sim/hash_name_map "Net_A")
 
-(reset! net/state (read-string (slurp "test/petri/state2.txt")))
+;(reset! net/state (read-string (slurp "test/petri/state2.txt")))
 
-(net_alive "A_B")
-@net/state
+;@net/state
+
+

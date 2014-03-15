@@ -52,18 +52,18 @@
 
 (def e1
   (label
-   :icon (clojure.java.io/resource "petri/enemySpaceShip.png")
-   :bounds [200 -600 100 100]))
+   :icon (clojure.java.io/resource "petri/tac.png")
+   :bounds [200 -600 80 134]))
 
 (def e2
   (label
-   :icon (clojure.java.io/resource "petri/enemySpaceShip.png")
-   :bounds [400 -200 100 100]))
+   :icon (clojure.java.io/resource "petri/tac.png")
+   :bounds [400 -200 80 134]))
 
 (def e3
   (label
-   :icon (clojure.java.io/resource "petri/enemySpaceShip.png")
-   :bounds [300 -1000 100 100]))
+   :icon (clojure.java.io/resource "petri/tac.png")
+   :bounds [300 -1000 80 134]))
 ;laser labels:
 
 (def l1
@@ -192,6 +192,13 @@
       (Thread/sleep 15)
       (recur))))
 
+
+(defn enemy_anim [k]
+  (do
+    (config! e1 :valign k)
+    (config! e2 :valign k)
+    (config! e3 :valign k)))
+
 (defn player_anim []
   (if @end?
     nil
@@ -202,13 +209,16 @@
          (cond
           (= 0 sp) (do
                      (config! player :valign :bottom)
-                     (config! bow :valign :bottom))
+                     (config! bow :valign :bottom)
+                     (enemy_anim :bottom))
           (= 1 sp) (do
                      (config! player :valign :center)
-                     (config! bow :valign :center))
+                     (config! bow :valign :center)
+                     (enemy_anim :center))
           (= 2 sp) (do
                      (config! player :valign :top)
-                     (config! bow :valign :top)))))
+                     (config! bow :valign :top)
+                     (enemy_anim :top)))))
       (Thread/sleep 100)
       (recur))))
 
@@ -332,9 +342,7 @@
         vs (:vertices (net @net/state))]
     (vec (map (fn [[t v x]] [(first (v vs)) x])  t))))
 
-(pretty_trans :Net_A #{[:-1965068709 :-1965068733 1]
-                      [:-1965068709 :-1965068734 1]}
- )
+
 
 
 (defn update_hud_trans [n t]
