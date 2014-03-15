@@ -22,10 +22,10 @@ A property is saved as data and has the following skelleton:<br>
 The Type can be either of these:
 :or :not :net_alive :non_empty :transition_alive
 
-The List of arguments can depends on the type:
-:or and :not get other hashmap properties as arguments
-:net_alive gets nil as argument
-:transition_alive and :non_empty get either names or hashvalues of vertices or transition as arguments
+The List of arguments depends on the type:<br><ul>
+:or and :not get other hashmap properties as arguments<br>
+:net_alive gets nil as argument<br>
+:transition_alive and :non_empty get either names or hashvalues of vertices or transition as arguments</ul><br>
 <br><br>
 The simulator offers a function called (property type & args) which returns a property skelleton
 <br><br>
