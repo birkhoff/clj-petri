@@ -426,15 +426,13 @@
 (defn game []
   (do
     (-> f show!)
-    (dosync (ref-set end? true))
-    (pause)
-    ;(future (bg_loop))
-    ;(future (player_loop))
-    ;(future (laser_loop))
-    ;(future (enemy_loop))
-    ;(future (player_anim))
-    ;(future (collision_loop))
-    ;(future (play-url (clojure.java.io/resource "petri/nyan_cat.mid")))
+    (future (bg_loop))
+    (future (player_loop))
+    (future (laser_loop))
+    (future (enemy_loop))
+    (future (player_anim))
+    (future (collision_loop))
+    (future (play-url (clojure.java.io/resource "petri/nyan_cat.mid")))
     (request-focus! f)))
 
 
