@@ -46,7 +46,7 @@
 (def bow
   (label
    :icon (clojure.java.io/resource "petri/rainbow.png")
-   :bounds [300 400 67 450]))
+   :bounds [310 450 67 450]))
 
 ;labels for "enemies" 
 
@@ -106,7 +106,7 @@
   (label :text "None Selected" :bounds [680 520 200 30]))
 
 (def current_trans
-   (text :text "nil"
+   (text :text "q/w     to switch nets\n\na/s      to switch transitions\n\nspace  to fire transition\n\nESC     to Start/Pause"
          :multi-line? true :editable? false :wrap-lines? false
          :bounds [680 520 200 200]))
 
@@ -387,7 +387,8 @@
       (future (laser_loop))
       (future (enemy_loop))
       (future (player_anim))
-      (future (collision_loop)))
+      (future (collision_loop))
+      (future (play-url (clojure.java.io/resource "petri/nyan_cat.mid"))))
     (dosync (ref-set end? true))))
 
 (listen f
@@ -434,13 +435,14 @@
 (defn game []
   (do
     (-> f show!)
-    (future (bg_loop))
-    (future (player_loop))
-    (future (laser_loop))
-    (future (enemy_loop))
-    (future (player_anim))
-    (future (collision_loop))
-    (future (play-url (clojure.java.io/resource "petri/nyan_cat.mid")))
+    ;(future (bg_loop))
+    ;(future (player_loop))
+    ;(future (laser_loop))
+    ;(future (enemy_loop))
+    ;(future (player_anim))
+    ;(future (collision_loop))
+    ;(future (play-url (clojure.java.io/resource "petri/nyan_cat.mid")))
+    (dosync (ref-set end? true))
     (request-focus! f)))
 
 

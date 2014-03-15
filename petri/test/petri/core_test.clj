@@ -178,11 +178,12 @@
  Two vertices and transitions are merged together and should be merged together in the properties as well resulting in only 3 different properties instead of 6 different"
     (let [k
           (unite_properties "A_B"
-              #{'((net_alive)) '((transition_alive :-1965068709))
-                 '((non_empty :-1965068733))}
+                            #{{:type :transition_alive, :args '(:-1965068709)} {:type :net_alive, :args nil}
+                              {:type :non_empty :args '(:-1965068733)}}
 
-              #{'((net_alive)) '((transition_alive :-1965068678))
-                '((non_empty :-1965068699))}
+                            #{{:type :transition_alive, :args '( :-1965068678)} {:type :net_alive, :args nil}
+                              {:type :non_empty :args '( :-1965068699)}}
+             
 
                                         ; vertices va and vb:
                             {:-1965068733 ["b" 5], :-1965068734 ["a" 12]}
@@ -394,3 +395,5 @@
        (let [res (map second (eval_properties "Net_A"))]
          (do (is  (= #{true} (set res)))
              (is (= 4 (count res))))))))
+
+

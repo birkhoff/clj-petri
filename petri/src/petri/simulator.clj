@@ -77,27 +77,14 @@
 (defn net_alive [net]
   (not (empty? (state_get_fireable_transitions net))))
 
-(net_alive "Net_A")
-
-                                        ; sees if a transition with
-                                        ; the name t is fireable
 
 
-(defn state_transition_fireable? [net t]
-  (contains? (into  #{}
-           (for [X (net_state/get_all_transition_hashes net t)]
-             (first (X (:transitions ((keyword net) @net_state/state)))))) t))
 
                                         ; sees if a transition hash is firable
 
 (defn state_transition_hash_fireable? [net hash]
   (contains? (state_get_fireable_transitions net) hash))
 
-
-(state_transition_hash_fireable? "Net_A" :-1965068709)
-(state_transition_fireable? "A_B" "z")
-(state_get_fireable_transitions "Net_A")
-(net_fireable_edges "Net_A")
 
 
                             ;fires tokens to a transition
@@ -246,12 +233,7 @@
       (swap! net_state/state assoc-in [(keyword net) :properties]
              (conj p (hash_property net property))))))
 
-(hash_property "Net_A" '("b"))
 
-(add_property "Net_A" (property :not (property :transition_alive "y")))
-(delete_property "Net_A") 
-
-@net_state/state
 
 
 (defmulti eval_property
@@ -281,17 +263,6 @@
   [net]
   (map (fn [p] [p  (eval_property p net)])
        (:properties  ((keyword net) @net_state/state))))
-
-
-
-(state_get_fireable_transitions "Net_A")
-
-(transition_alive "Net_A" :-1965068709)
-
-(transition_alive "Net_A" :-1965068710)
-
-
-@net_state/state
 
 
 

@@ -1,4 +1,5 @@
 (ns petri.gui
+  (:gen-class)
   (:use seesaw.core)
   (:use seesaw.core
         [clojure.java.io :only [file]])
@@ -172,7 +173,7 @@
 
 
 (listen button_fire :action
-        (fn [e] (doall
+        (fn [e] (do
                  (sim/state_fire_transition
                      (esc_text field_net)
                      (sim/state_transition_hash
@@ -182,7 +183,7 @@
 
 
 (listen button_random_fire :action
-        (fn [e] (doall
+        (fn [e] (do
                  (sim/state_fire_random_transition)
                  (text! field_state (pretty (deref net/state))))))
 
@@ -250,8 +251,11 @@
 (def button_copy
   (button :text "copy" :bounds [155 65 60 30]))
 
-(def field_copy_original
-  (text :bounds [30 30 150 30]))
+
+(def box_copy_original
+  (combobox
+   :model (doall (map :name (vals @net/state)))
+   :bounds [30 30 150 30]))
 
 (def field_copy_copy
   (text :bounds [190 30 150 30]))
@@ -266,19 +270,13 @@
   (xyz-panel :items [button_copy
                      (label :text "Original" :bounds [30 10 150 20])
                      (label :text "Copy" :bounds [191 10 150 20])
-                     field_copy_original
+                     box_copy_original
                      field_copy_copy]))
 
 
 
 (def button_merge
   (button :text "merge" :bounds [200 195 65 30]))
-
-(def field_merge_a
-  (text :bounds [30 30 150 30]))
-
-(def field_merge_b
-  (text :bounds [190 30 150 30]))
 
 (def field_merge_out
   (text :bounds [350 30 150 30]))
@@ -287,7 +285,17 @@
   (text :bounds [30 90 470 30] :tip "Please enter the hash values of the vertices you want to merge    e.g.  :19281 :2866 :19280 :2867     Each pair of two consecutive hash values will be merged as one vertex" ))
 
 (def field_merge_transitions
-  (text :bounds [30 150 470 30]  :tip "Please enter the hash values of the transitions you want to merge    e.g.  :19281 :2866 :19280 :2867    Each pair of two consecutive hash values will be merged as one transition")) 
+  (text :bounds [30 150 470 30]  :tip "Please enter the hash values of the transitions you want to merge    e.g.  :19281 :2866 :19280 :2867    Each pair of two consecutive hash values will be merged as one transition"))
+
+(def box_merge_a
+  (combobox
+   :model (doall (map :name (vals @net/state)))
+   :bounds [30 30 150 30]))
+
+(def box_merge_b
+  (combobox
+   :model (doall (map :name (vals @net/state)))
+   :bounds [190 30 150 30]))
 
 (def mergepanel
   (xyz-panel :items [button_merge
@@ -296,11 +304,12 @@
                      (label :text "Merged Net" :bounds [352 10 150 20])
                      (label :text "Vertices which will be merged:" :bounds [30 70 300 20])
                      (label :text "Transitions which will be merged:" :bounds [30 130 300 20])
-                     field_merge_a
-                     field_merge_b
+                     box_merge_a
+                     box_merge_b
                      field_merge_out
                      field_merge_vertices
                      field_merge_transitions]))
+
 
 (def button_rename
   (button :text "RENAME" :bounds [60 65 80 30]))
@@ -353,8 +362,8 @@
 
 (defn dispose_copy [e]
   (let [copy     (esc_text field_copy_copy)
-        original (esc_text field_copy_original)]
-    (if (and (not= copy "") (not= original ""))
+        original (selection box_copy_original)]
+    (if (not= copy "")
       (do
         (net/add_petri (net/copy_petri
                     copy
@@ -364,15 +373,13 @@
 
 
 (defn dispose_merge [e]
-  (let [out (text field_merge_out)
-             a   (esc_text field_merge_a)
-             b   (esc_text field_merge_b)]
-    (if (and (not= out "") (not= a "") (not= b ""))
+  (let [out (text field_merge_out)]
+    (if (not= out "")
       (do
         (net/add_petri (net/hash_merge_petri
                     out
-                    a
-                    b                
+                    (selection box_merge_a)
+                    (selection box_merge_b)                
                     (read-string (str "{" (text field_merge_vertices) "}"))
                     (read-string (str "{"(text field_merge_transitions) "}"))))
         (dispose! merge_f)
@@ -447,13 +454,17 @@
 
 (defn a-copy  [e]
   (do
+    (config! box_copy_original :model (doall (map :name (vals @net/state))))
     (-> copy_f show!)
-    (request-focus! field_copy_original)))
+    (request-focus! field_copy_copy)))
 
 (defn a-merge [e]
   (do
+    (config! box_merge_a :model (doall (map :name (vals @net/state))))
+    (config! box_merge_b :model (doall (map :name (vals @net/state))))
+    box_merge_b
     (-> merge_f show!)
-    (request-focus! field_merge_a)))
+    (request-focus! field_merge_out)))
 
 (defn a-delete [e]
   (do
@@ -500,9 +511,11 @@
 
 (config! f :menubar menus)
 
-(-> f show!)
 
 
+(defn -main
+  []
+  (-> f show!))
 
 ;(sim/eval_property "Net_A")
 
