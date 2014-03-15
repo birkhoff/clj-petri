@@ -10,7 +10,33 @@ In a REPL you can use the core <b>(use ‘petri.core)</b> where each clojure fil
 Various tests have been written which can be executed via <b>lein test</b>
 
 
-<h5>Controls during the visualization of the petri nets:</h5>
+
+<br><br><br>
+
+<h4>Adding a property to a net:</h4>
+
+A property is saved as data and has the following skelleton:<br>
+
+<b>{:type TYPE, :args LIST-OF-ARGUMENTS}</b>
+
+The Type can be either of these:
+:or :not :net_alive :non_empty :transition_alive
+
+The List of arguments can depends on the type:
+:or and :not get other hashmap properties as arguments
+:net_alive gets nil as argument
+:transition_alive and :non_empty get either names or hashvalues of vertices or transition as arguments
+<br><br>
+The simulator offers a function called (property type & args) which returns a property skelleton
+<br><br>
+example:<br>
+<b>(property :or  (property :non_empty "a") (property :non_empty "b"))</b><br>
+<b>{:type :or, :args ({:type :non_empty, :args ("a")} {:type :non_empty, :args ("b")})}</b>
+<br>
+<br>
+The GUI currently needs correct property skelletons as input!
+<br><br><br><br>
+<h4>Controls during the visualization of the petri nets:</h4>
 
  <ul>
     q/w to switch back and forth between petri nets<br>
@@ -20,7 +46,7 @@ Various tests have been written which can be executed via <b>lein test</b>
     arrow keys to navigate<br>
  </ul>
 
-<br><br><br>
+<br><br><br><br><br>
 
 <h5>Example calls from the petri_net_state:</h5>
  <table>
