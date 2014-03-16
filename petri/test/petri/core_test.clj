@@ -136,12 +136,20 @@
                                 (get_vertex_hash ((keyword "Petri_B") @state) "d")}
 
                                {(get_transition_hash ((keyword "Petri_A")@state) "z")
-                                (get_transition_hash ((keyword "Petri_B") @state)	"z") })) ))
+                                (get_transition_hash ((keyword "Petri_B") @state)	"z") })) 
 
+        (add_petri (hash_merge_petri "A_B_2_2" "Petri_A" "Petri_B"  {"v-b" "d"}
+                                     {(get_transition_hash ((keyword "Petri_A")@state) "z")
+                                      (get_transition_hash ((keyword "Petri_B") @state)	"z") }))
+        
         (is (= 2 (count (:vertices    (:A_B_2 @state)))))
-	      (is (= 2 (count (:transitions (:A_B_2 @state)))))
+        (is (= 2 (count (:transitions (:A_B_2 @state)))))
         (is (= 4 (count (:edges_in (:A_B_2 @state)))))
-        (is (= 4 (count (:edges_out (:A_B_2 @state))))) )
+        (is (= 4 (count (:edges_out (:A_B_2 @state)))))
+        (is (= (set (map second (:vertices  (:A_B_2 @state))))
+               (set (map second (:vertices    (:A_B_2_2 @state))))))
+        (is (= (set (map second (:transitions    (:A_B_2 @state))))
+               (set (map second (:transitions    (:A_B_2_2 @state)))))))))
 
 
 

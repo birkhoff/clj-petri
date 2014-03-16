@@ -249,7 +249,7 @@
                                         ; merge-with
                                         ;second approach
 
-(defn max_v [[a x] [b y]]
+(defn- max_v [[a x] [b y]]
   (if (> x y)
     [a x]
     [b y]))
@@ -274,9 +274,6 @@
              (map  (fn [k] {k (keyword_hash_it name k)}) (keys v_a_b))))))
 
 
-(unite_vertices_hash "net_a" {:a [:a 5]} {:b [:b 14]} {:a :b})
-(unite_vertices {:a [:a 5]} {:b [:b 10]} {:a :b})
-
 
                                         ;unites transitions from two petrinets
 
@@ -298,7 +295,7 @@
         (keyword_hash_it net (second x))
         (get x 2)]  )) )
 
-(defn max_of_equals
+(defn- max_of_equals
 "max cost of edges with the same path"
   [t]
   (into #{} (for [x t]
@@ -306,8 +303,6 @@
 
 
 
-(max_of_equals  #{[:563948993 :563949003 7] [:563949025 :563949003 9]
-   [:563949025 :563949003 10]})
 
 (defn unite_edges
   "unites two sets ea and eb of edges and adjusts the path of
@@ -318,7 +313,7 @@
          (replace transitions (replace vertices t)))))))
 
 
-;this could be used in other functions very well
+;this could be used in other functions very well:
 
 (defn rename_hash_properties [net va vb ta tb]
   (reduce merge (for [X (keys (set/union va vb ta tb))]
@@ -330,19 +325,39 @@
   (walker/prewalk-replace
    (rename_hash_properties net va vb ta tb)
    (walker/prewalk-replace
-           (set/union vertices transitions {old_a net old_b net}) (set/union pa pb))))
+    (set/union vertices transitions {old_a net} {old_b net}) (set/union pa pb))))
    
 
 
-(deref state)
 
-(walker/prewalk-replace '{:a :z} '((:a :b) ((:c :d) :a)))
+(defn- hash_name_vertices_map
+"returns a hashmap which converts vertices names to their hash values"
+  [net_a net_b]
+  (reduce merge  (map (fn [v] {(first (second v)) (first v)})
+                      (concat
+                       (:vertices ((keyword net_b) @state))
+                       (:vertices ((keyword net_a) @state))))))
+
+(defn- hash_name_transitions_map
+"returns a hashmap which converts transitions names to their hash values"
+  [net_a net_b]
+  (reduce merge  (map (fn [v] {(first (second v)) (first v)})
+                      (concat
+                       (:transitions ((keyword net_b) @state))
+                       (:transitions ((keyword net_a) @state))))))
 
 
 
-(defn hash_merge_petri [name net_a net_b same_vertices same_transitions]
+(defn hash_merge_petri
+  "Merging two Petri Nets Net_A and Net_B to a new one with the specified name
+   same_vertices and same_transitions are hashmaps which will merge tuples of transitions and vertices by their hashvalues
+   e.g.: (hash_merge_petri \"a_b\" \"a\" \"b\" {:101 :201} {})
+          a and b will be merged and the vertices :101 and :201 and  will be merged"
+  [name net_a net_b merged_vertices merged_transitions]
   (let [na ((keyword net_a) (deref state))
-        nb ((keyword net_b) (deref state))]
+        nb ((keyword net_b) (deref state))
+        same_vertices    (walker/prewalk-replace (hash_name_vertices_map net_a net_b) merged_vertices)
+        same_transitions (walker/prewalk-replace (hash_name_transitions_map net_a net_b) merged_transitions)]
    (own_petri
      name
      (unite_vertices_hash name (:vertices na) (:vertices nb) same_vertices)
