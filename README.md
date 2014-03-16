@@ -19,8 +19,8 @@ A property is saved as data and has the following skelleton:<br>
 
 <b>{:type TYPE, :args LIST-OF-ARGUMENTS}</b>
 
-The Type can be either of these:
-:or :not :net_alive :non_empty :transition_alive
+The Type can be one of the following keywords:
+<ul>:or <br>:not<br> :net_alive<br> :non_empty<br> :transition_alive</ul><br>
 
 The List of arguments depends on the type:<br><ul>
 :or and :not get other hashmap properties as arguments<br>
@@ -30,10 +30,12 @@ The List of arguments depends on the type:<br><ul>
 The simulator offers a function called (property type & args) which returns a property skelleton
 <br><br>
 example:<br>
-<b>(property :or  (property :non_empty "a") (property :non_empty "b"))</b><br>
-<b>{:type :or, :args ({:type :non_empty, :args ("a")} {:type :non_empty, :args ("b")})}</b>
+<b>(property :or (property :non_empty "a") (property :net_alive))</b><br>
+<b>{:type :or, :args ({:type :non_empty, :args ("a")} {:type :net_alive, :args nil})}</b>
 <br>
 <br>
+NOTES: <br>
+The <i>add_property</i> and <i>property</i> functions belong to the simulator namespace!<br>
 The GUI currently needs correct property skelletons as input!
 <br><br><br><br>
 <h4>Controls during the visualization of the petri nets:</h4>
@@ -49,10 +51,11 @@ The GUI currently needs correct property skelletons as input!
 <br><br><br><br><br>
 
 <h5>Example calls from the petri_net_state:</h5>
- <table>
+ <table width="100%">
  <th>code</th><th>output</th>
+
  <tr>
-  <td>(petri "Petri_A")</td> <td>{:name "Petri_A",<br>
+  <td  width="50%">(petri "Petri_A")</td> <td>{:name "Petri_A",<br>
  :properties #{},<br>
  :vertices {},<br>
  :transitions {},<br>
@@ -117,10 +120,8 @@ The GUI currently needs correct property skelletons as input!
 
 <tr>
 <td> (hash_merge_petri "A_B_2" "Petri_A" "Petri_B"<br>
-                               {(get_vertex_hash ((keyword "Petri_A") @state)  "v-b")<br>
-                                (get_vertex_hash ((keyword "Petri_B") @state) "d")}<br>
-                               {(get_transition_hash ((keyword "Petri_A")@state) "z")<br>
-                                (get_transition_hash ((keyword "Petri_B") @state)	"z") })) ))</td>
+                               {:789101587 :563949003}<br>
+                               {:563948994 :563949025})) ))</td>
 <td>Merging two petri nets together. Two hashmaps of hashvalues of vertices and transitions specify which transitions and vertices are merged together</td>
 </tr>
 
@@ -129,3 +130,10 @@ The GUI currently needs correct property skelletons as input!
 </tr>
 
   </table>
+  
+  <br><br>
+  <br><br>
+With <b>state_transition_hash </b> and <b>state_vertex_hash</b> from the simulator's namespace you can get the hash values of certain transitions and vertices from the state. (Only one hash value will be returned even if there are duplicate names)
+<br><br>example:<br>
+<b>(state_transition_hash "Petri_A" "y")<br>
+(state_vertex_hash "Petri_A" "v-a")</b>
