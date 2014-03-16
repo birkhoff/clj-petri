@@ -120,7 +120,7 @@ The GUI currently needs correct property skelletons as input!
 
 <tr>
 <td> (hash_merge_petri "A_B_2" "Petri_A" "Petri_B"<br>
-                               {:789101587 :563949003}<br>
+                               {:789101587 :563949003 "a-a" "b-a"}<br>
                                {"x" "y"})) ))</td>
 <td>Merging two petri nets together. Two hashmaps of vertices and transitions specify which transitions and vertices are merged together. The input of the hashmaps is either their hashvalue or their name. However if two vertices or transitions have the same name you must use their hashvalues for a propper identification</td>
 </tr>
