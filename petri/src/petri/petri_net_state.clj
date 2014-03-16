@@ -1,5 +1,4 @@
-(ns petri.petri_net_state
-  )
+(ns petri.petri_net_state )
 
 (require '[clojure.set :as set])
 (require '[clojure.string :as strng])
@@ -350,9 +349,9 @@
 
 (defn hash_merge_petri
   "Merging two Petri Nets Net_A and Net_B to a new one with the specified name
-   same_vertices and same_transitions are hashmaps which will merge tuples of transitions and vertices by their hashvalues
-   e.g.: (hash_merge_petri \"a_b\" \"a\" \"b\" {:101 :201} {})
-          a and b will be merged and the vertices :101 and :201 and  will be merged"
+   merged_vertices and merged_transitions are hashmaps which will merge tuples of transitions and vertices by their hashvalues or their names (the order of which net's vertices or transition is the key and which are the values is not important).
+   e.g.: (hash_merge_petri \"a_b\" \"a\" \"b\" {:101 :201 \"v_a\" \"v-b\"} {\"x\" \"y\"})
+          a and b will be merged and the vertices :101 and :201 will be merged to one as well as \"v-a\" and \"v-b\" and the transitions \"x\" and \"y\""
   [name net_a net_b merged_vertices merged_transitions]
   (let [na ((keyword net_a) (deref state))
         nb ((keyword net_b) (deref state))
