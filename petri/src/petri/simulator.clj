@@ -244,10 +244,11 @@
   (net_alive net))
 
 (defmethod eval_property :transition_alive [prop net]
-  (apply transition_alive (cons net (:args prop))))
+  (apply transition_alive  net (:args prop)))
+
 
 (defmethod eval_property :non_empty [prop net]
-  (apply non_empty (cons net (:args prop))))
+  (apply non_empty  net (:args prop)))
 
 (defmethod eval_property :or [prop net]
   (true? (some identity (map #(eval_property % net) (:args prop)))))
