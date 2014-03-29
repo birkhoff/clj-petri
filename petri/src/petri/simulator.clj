@@ -134,19 +134,24 @@
 
 
 
+(defn- convert_to_hash [net t]
+  (let [hash (state_transition_hash net t)]
+    (if (nil? hash)
+      t
+      hash)))
+
                                         ; fires a transition and swaps
                                         ; the vertices 
 
 
 (defn state_fire_transition [net t]
   (let [n     ((keyword net) (deref net_state/state))
-        edges (net_state/edges_to_transition_hash n t)
-        outs  (net_state/edges_from_transition_hash n t)]
-    (if (state_transition_hash_fireable? net t)       
+        t1    (convert_to_hash net t)
+        edges (net_state/edges_to_transition_hash n t1)
+        outs  (net_state/edges_from_transition_hash n t1)]
+    (if (state_transition_hash_fireable? net t1)       
       (swap! net_state/state assoc-in [(keyword net) :vertices]
            (fire_from_all_edges (fire_to_all_edges edges net) outs net)))))
-
-
 
 
 
@@ -264,7 +269,6 @@
   [net]
   (map (fn [p] [p  (eval_property p net)])
        (:properties  ((keyword net) @net_state/state))))
-
 
 
 

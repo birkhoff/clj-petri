@@ -354,16 +354,17 @@
         (is (= #{["v-a" 10] ["v-b" 9]}
                (set (map second (:vertices (:Petri_A @state))))))
 
-        (state_fire_transition "Petri_A"
-                               (state_transition_hash "Petri_A" "z"))
+        (state_fire_transition "Petri_A" "z"
+                               ;(state_transition_hash "Petri_A" "z")
+                               )
 
         (is (= #{["v-a" 10] ["v-b" 9]}
                (set (map second (:vertices (:Petri_A @state))))))
 
         (state_add_vertex "Petri_A" "v-b" 100)
-
+        
         (state_fire_transition "Petri_A"
-                               (state_transition_hash "Petri_A" "z"))
+                               "z")
 
         (is (= #{["v-a" 7] ["v-b" 0]}
                (set (map second (:vertices (:Petri_A @state))))))) ))

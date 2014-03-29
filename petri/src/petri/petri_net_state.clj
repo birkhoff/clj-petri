@@ -1,4 +1,4 @@
-(ns petri.petri_net_state )
+(ns petri.petri_net_state)
 
 (require '[clojure.set :as set])
 (require '[clojure.string :as strng])
