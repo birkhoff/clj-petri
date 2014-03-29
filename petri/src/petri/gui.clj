@@ -426,7 +426,6 @@
 
 ;; save and open functions
 
-;(def current-file (atom (file (System/getProperty "user.home") ".dicscratch")))
 
 
 (defn select-file []
