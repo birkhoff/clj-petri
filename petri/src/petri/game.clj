@@ -12,7 +12,7 @@
 (def f (frame :title "Petri Netz Shooter 2014"
               ;:on-close :exit
               ))
-(config! f :size [900 :by 800])
+(config! f :size [1200 :by 800])
 
 (defn display [content]
   (config! f :content content)
@@ -110,17 +110,25 @@
          :multi-line? true :editable? false :wrap-lines? false
          :bounds [680 520 200 200]))
 
+(def properties
+   (text :text "Shoot Enemies to evaluate Properties"
+         :multi-line? true :editable? false :wrap-lines? false
+         :bounds [910 110 250 345]))
+
+
 (def game_panel
   (xyz-panel :items [(label :text "CURRENT NET:" :bounds [660 15 100 30])
                      (label :text "VERTICES:" :bounds [660 75 100 30])
                      (label :text "TRANSITIONS:" :bounds [660 270 100 30])
                      (label :text "CURRENT TRANSITION:" :bounds [660 490 200 30])
+                     (label :text "PROPERTIES:" :bounds [900 75 200 30])
                      current_net
                      current_trans_name
+                     (scrollable properties :bounds  [910 110 250 345])
                      (scrollable  vertices :bounds [680 110 200 150])
                      (scrollable  transitions :bounds [680 305 200 150])
                      (scrollable  current_trans :bounds [680 570 200 200])
-                     (label :background :lightgrey :bounds [650 0 250 800])
+                     (label :background :lightgrey :bounds [650 0 550 800])
                      player bow  e1 e2 e3 l1 l2 l3 l4 bg1 bg2
                      (label :background "#004478" :bounds [0 0 600 800])]))
 
@@ -278,6 +286,15 @@
     (- x)))
 
 
+;; currently not in use
+(defn eval_props []
+  (let [n (:net @player_state)]
+      (text! properties
+             (clojure.string/replace (pretty_v
+                (apply str
+                       (for [p (walker/prewalk-replace (clojure.set/map-invert (sim/hash_name_map n)) (sim/eval_properties n))]
+                         (str p)))) #"(:type|:args)" ""))))
+
 (defn collision_loop []
   (if @end?
     nil
@@ -290,13 +307,14 @@
                         (> 90 (abs (- (- y_2 50) y_1)))
                         (> 90 (abs (- (+ 50 x_2) (+ 7 x_1)))))
                      (dosync
-                       (alter enemy_state assoc k [-200 y_2 hp])
-                       (alter player_laser_state assoc :shot
-                                    (vec (map (fn [[x y i]] (if (and (= x x_1)
-                                                                     (= y y_1)
-                                                                     (= i n))
-                                                           [-200 -10 i]
-                                                           [x y i])) (:shot @player_laser_state)))))))))))
+                      (eval_props)
+                      (alter enemy_state assoc k [-200 y_2 hp])
+                      (alter player_laser_state assoc :shot
+                             (vec (map (fn [[x y i]] (if (and (= x x_1)
+                                                             (= y y_1)
+                                                             (= i n))
+                                                      [-200 -10 i]
+                                                      [x y i])) (:shot @player_laser_state)))))))))))
       (Thread/sleep 20)
       (recur))))
 
@@ -388,7 +406,9 @@
       (future (enemy_loop))
       (future (player_anim))
       (future (collision_loop))
-      (future (play-url (clojure.java.io/resource "petri/nyan_cat.mid"))))
+      ;(future (play-url (clojure.java.io/resource
+      ;"petri/nyan_cat.mid")))
+      )
     (dosync (ref-set end? true))))
 
 (listen f
@@ -455,7 +475,7 @@
 ;@player_state
 
 
-;(reset! net/state (read-string (slurp "test/petri/state2.txt")))
+;(reset! net/state (read-string (slurp "net_state.txt")))
 
 
 
