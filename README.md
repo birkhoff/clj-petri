@@ -3,10 +3,52 @@ run <b>lein uberjar</b> to produce a JAR File
 In a REPL you can use the core <b>(use ‘petri.core)</b> where each clojure file from the petri net project is referenced:
 <ul>
 (:require [petri.petri_net_state :as net])<br>
-(:require [petri.simulator :as simulator])<br>
+(:require [petri.simulator :as sim])<br>
 (:require [petri.gui :as gui])<br>
 (:require [petri.game :as game])<br>
  </ul> 
+ <br>
+Here are various <b>example calls</b>: <br> <br>
+
+(net/add_petri (net/petri "Petri_A")) <br>
+(net/state_add_vertex "Petri_A" "a" 5) <br>
+(net/state_add_vertex "Petri_A" "b" 0) <br>
+(net/state_add_transition "Petri_A" "t") <br>
+(net/state_add_transition "Petri_A" "s") <br> <br>
+
+(net/state_add_edges_in "Petri_A" "a" "t" 1) <br>
+(net/state_add_edges_out "Petri_A" "b" "t" 1) <br> <br>
+
+(net/state_add_edges_in "Petri_A" "b" "s" 1) <br>
+(net/state_add_edges_out "Petri_A" "a" "s" 1) <br> <br>
+
+(sim/state_fire_transition "Petri_A"  "t") <br> <br>
+
+(sim/add_property "Petri_A"   (sim/property :or (sim/property :non_empty "a")  (sim/property :non_empty "b"))) <br> <br>
+
+(sim/eval_properties "Petri_A") <br> <br>
+
+
+(net/add_petri (net/petri "Petri_B")) <br>
+(sim/state_add_vertex "Petri_B" "d" 7) <br>
+(sim/state_add_transition "Petri_B" "z") <br>
+(sim/state_add_edges_out "Petri_B" "d" "z" 2) <br>
+(sim/state_add_edges_in "Petri_B" "d" "z" 1) <br> <br>
+
+
+(net/hash_merge_petri "A_B_2" "Petri_A" "Petri_B"     {"a" "d"}  {"z" "t"}) <br> <br>
+
+(net/add_petri (net/hash_merge_petri "A_B_2" "Petri_A" "Petri_B"     {"a" "d"}  {"z" "t"})) <br> <br>
+
+(net/copy_petri "B_Copy" "Petri_B") <br> <br>
+
+(sim/open_file "test/petri/state2.txt") <br>
+(sim/open_file "test.txt") <br> <br>
+
+(sim/state_fire_random_transition) <br>
+(sim/state_fire_random_transitions 3) <br> <br> <br> <br>
+ 
+ 
 Various tests have been written which can be executed via <b>lein test</b>
 
 
