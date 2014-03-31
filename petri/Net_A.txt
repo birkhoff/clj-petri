@@ -1,0 +1,1 @@
+{:Net_A {:name "Net_A", :properties #{{:type :net_alive, :args nil} {:type :transition_alive, :args (:-1965068710)}}, :vertices {:-1965068733 ["b" 5], :-1965068734 ["a" 10]}, :transitions {:-1965068710 ["y"], :-1965068711 ["x"]}, :edges_in #{[:-1965068710 :-1965068733 1]}, :edges_out #{[:-1965068710 :-1965068734 1]}}}
