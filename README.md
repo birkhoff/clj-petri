@@ -52,8 +52,11 @@ Here are various <b>example calls</b>: <br> <br>
 
 (sim/state_fire_random_transition) <br>
 (sim/state_fire_random_transitions 3) <br> 
+<br>
+In case of duplicate names you can always refer to the hash values:
 
-(net/state_add_edges_out "Net_B" :-1965068680 :-1965068699 1) <br>
+(net/state_add_edges_in "Net_B" :-1965068680 :-1965068699 1) <br>
+(net/state_add_edges_out "Net_B" :-1965068680 :-1965068700 10) <br>
 <br> <br> <br><br><br>
 
  
