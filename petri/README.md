@@ -4,6 +4,9 @@ A Clojure library designed to simulate Petri Nets.
 
 ## Usage
 
+Net_A, Net_B, Net_C and net_state.txt are example nets which can be loaded into the simulator
+
+
 To use this project please download it and start a lein repl in the <i>petri</i> folder<br><br>
  
 Here are various <b>example calls</b>: <br> <br>
