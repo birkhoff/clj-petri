@@ -101,8 +101,9 @@
  [t t1]
   (first (contains_edge_all? t t1)))
 
-(contains_edge_all?  #{[:a ] [:a :b 9] [:a :c] [:a :b]} [:a :b 3])
-(contains_edge? #{[:a ] [:a :b 9] [:a :c] [:b :c]} [:a :b 3])
+
+;(contains_edge_all?  #{[:a ] [:a :b 9] [:a :c] [:a :b]} [:a :b 3])
+;(contains_edge? #{[:a ] [:a :b 9] [:a :c] [:b :c]} [:a :b 3])
 
 
                ; adds an edge e1 in e and replaces an equal edge with the new value
@@ -160,6 +161,18 @@
 
 
 
+(defn- vertex_convert_to_hash [net v]
+  (let [hash (get_vertex_hash  net v)]
+    (if (nil? hash)
+      v
+      hash)))
+
+(defn- transition_convert_to_hash [net t]
+  (let [hash (get_transition_hash  net t)]
+    (if (nil? hash)
+      t
+      hash)))
+
                             ; adds an edge to a hashset of edges with a keyword
                             ; for easier replacement of
                             ; identical edges
@@ -172,8 +185,8 @@
   [net vertex transition cost]
    (let [e  (:edges_in ((keyword net) (deref state)))
          n  ((keyword net) (deref state))
-         v1 (get_vertex_hash  n vertex)
-         t1 (get_transition_hash n transition)]
+         v1 (vertex_convert_to_hash  n vertex)
+         t1 (transition_convert_to_hash n transition)]
      (if (and  (not= v1 nil) (not= t1 nil) )
         (swap! state assoc-in [(keyword net) :edges_in] (add_edge e [t1 v1 cost])))))
 
@@ -184,8 +197,8 @@
   [net vertex transition cost]
    (let [e (:edges_out ((keyword net) (deref state)))
          n ((keyword net) (deref state))
-         v1 (get_vertex_hash n vertex)
-         t1 (get_transition_hash n transition)]
+         v1 (vertex_convert_to_hash  n vertex)
+         t1 (transition_convert_to_hash n transition)]
      (if (and  (not= v1 nil) (not=  t1 nil))
        (swap! state assoc-in [(keyword net) :edges_out] (add_edge e  [t1 v1 cost])))))
 
