@@ -8,6 +8,11 @@ In a REPL you can use the core <b>(use ‘petri.core)</b> where each clojure fil
 (:require [petri.game :as game])<br>
  </ul> 
  <br>
+ 
+<h4>Installation:</h4>
+<br>
+To use this project please download it and start a lein repl in the <i>petri</i> folder<br><br>
+ 
 Here are various <b>example calls</b>: <br> <br>
 
 (net/add_petri (net/petri "Petri_A")) <br>
@@ -43,11 +48,14 @@ Here are various <b>example calls</b>: <br> <br>
 (net/copy_petri "B_Copy" "Petri_B") <br> <br>
 
 (sim/open_file "test/petri/state2.txt") <br>
-(sim/open_file "test.txt") <br> <br>
+(sim/save_file "test.txt") <br> <br>
 
 (sim/state_fire_random_transition) <br>
-(sim/state_fire_random_transitions 3) <br> <br> <br> <br>
- 
+(sim/state_fire_random_transitions 3) <br> 
+
+(net/state_add_edges_out "Net_B" :-1965068680 :-1965068699 1) <br>
+<br> <br> <br><br><br>
+
  
 Various tests have been written which can be executed via <b>lein test</b>
 
