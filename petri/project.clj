@@ -5,5 +5,6 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.5.1"]
                  [seesaw "1.4.4"]]
-  :main petri.gui)
+  :main petri.gui
+  :repl-options { :init-ns petri.core })
 				
