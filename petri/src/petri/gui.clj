@@ -403,7 +403,7 @@
     (if  (not= original "")
       (do
         (net/rename_transition (esc_text field_net) original rename)
-        (dispose! rename_f)
+        (dispose! rename_f_t)
         (text! field_state (pretty (deref net/state)))))))
 
 
