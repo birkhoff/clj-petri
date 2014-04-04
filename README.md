@@ -60,7 +60,18 @@ In case of duplicate names you can always refer to the hash values:
 (net/state_add_edges_in "Net_B" :-1965068680 :-1965068699 1) 
 (net/state_add_edges_out "Net_B" :-1965068680 :-1965068700 10)
 ```
+<br> <br> <br>
+
+<h4>GUI usage</h4>
+
+To add a net please specify a name in the <i>Name of Net</i> label and press the <i>add net</i> button<br>
+All other functions will refer to the net specified in the <i>Name of Net</i> label <br>
+If you want to add a transition or vertex specify it the corresponding label and it will be added in the Net specified in the <i>Name of Net</i> label.<br>
+An edge is added with the vertex and transition specified in the <i>Name of Vertex</i> and <i>Name of Transition</i> labels with the costs specified in the <i>Tokens</i> label<br>
+
+
 <br> <br> <br><br><br>
+
 
  
 Various tests have been written which can be executed via <b>lein test</b>
